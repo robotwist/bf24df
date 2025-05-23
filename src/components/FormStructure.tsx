@@ -7,6 +7,7 @@ import styles from '../styles/FormStructure.module.css';
 const FormStructure: React.FC = () => {
   const { data, loading, error } = useGraphData('mockorg', 'mockblueprint');
   const [selectedForm, setSelectedForm] = useState<FormNode | null>(null);
+  const [hoveredForm, setHoveredForm] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('FormStructure state:', { loading, error, hasData: !!data });
@@ -42,44 +43,88 @@ const FormStructure: React.FC = () => {
     </div>
   );
 
-  const renderFormList = (graphData: GraphData) => (
-    <div className={styles.formList}>
-      <h3>Forms</h3>
-      <div className={styles.formGrid}>
+  const renderDAG = (graphData: GraphData) => (
+    <div className={styles.dagContainer}>
+      <h3>Form Dependencies</h3>
+      <div className={styles.dag}>
         {graphData.nodes.map(node => (
-          <div key={node.id} className={styles.formCard}>
-            <div className={styles.formHeader}>
+          <div 
+            key={node.id}
+            className={`${styles.dagNode} ${
+              selectedForm?.id === node.id ? styles.selected : ''
+            } ${hoveredForm === node.id ? styles.hovered : ''}`}
+            onClick={() => setSelectedForm(node)}
+            onMouseEnter={() => setHoveredForm(node.id)}
+            onMouseLeave={() => setHoveredForm(null)}
+          >
+            <div className={styles.nodeContent}>
               <h4>{node.data.name}</h4>
               <span className={styles.fieldCount}>
                 {Object.keys(node.data.input_mapping).length} fields
               </span>
             </div>
-            <div className={styles.formDependencies}>
-              {node.data.prerequisites.length > 0 ? (
-                <div className={styles.dependencyList}>
-                  <span className={styles.dependencyLabel}>Depends on:</span>
-                  {node.data.prerequisites.map((prereqId: string) => {
-                    const prereq = graphData.nodes.find(n => n.id === prereqId);
-                    return (
-                      <span key={prereqId} className={styles.dependency}>
-                        {prereq?.data.name || prereqId}
-                      </span>
-                    );
-                  })}
-                </div>
-              ) : (
-                <span className={styles.noDependencies}>No dependencies</span>
-              )}
-            </div>
-            <button 
-              className={styles.editButton}
-              onClick={() => handleEditMappings(node)}
-            >
-              Edit Mappings
-            </button>
+            {node.data.prerequisites.length > 0 && (
+              <div className={styles.dependencies}>
+                {node.data.prerequisites.map(prereqId => {
+                  const prereq = graphData.nodes.find(n => n.id === prereqId);
+                  return (
+                    <div 
+                      key={prereqId}
+                      className={`${styles.dependency} ${
+                        hoveredForm === prereqId ? styles.hovered : ''
+                      }`}
+                    >
+                      ← {prereq?.data.name || prereqId}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ))}
       </div>
+    </div>
+  );
+
+  const renderFormDetails = (form: FormNode) => (
+    <div className={styles.formDetails}>
+      <h3>{form.data.name}</h3>
+      <div className={styles.formInfo}>
+        <div className={styles.infoSection}>
+          <h4>Fields</h4>
+          <ul>
+            {Object.entries(form.data.input_mapping).map(([key, value]) => (
+              <li key={key}>
+                <span className={styles.fieldName}>{key}</span>
+                <span className={styles.fieldType}>{typeof value}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className={styles.infoSection}>
+          <h4>Dependencies</h4>
+          {form.data.prerequisites.length > 0 ? (
+            <ul>
+              {form.data.prerequisites.map(prereqId => {
+                const prereq = data?.nodes.find(n => n.id === prereqId);
+                return (
+                  <li key={prereqId}>
+                    {prereq?.data.name || prereqId}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p>No dependencies</p>
+          )}
+        </div>
+      </div>
+      <button 
+        className={styles.editButton}
+        onClick={() => handleEditMappings(form)}
+      >
+        Edit Mappings
+      </button>
     </div>
   );
 
@@ -126,7 +171,21 @@ const FormStructure: React.FC = () => {
       </header>
 
       {renderGraphStats(data)}
-      {renderFormList(data)}
+      
+      <div className={styles.mainContent}>
+        <div className={styles.leftPanel}>
+          {renderDAG(data)}
+        </div>
+        <div className={styles.rightPanel}>
+          {selectedForm ? (
+            renderFormDetails(selectedForm)
+          ) : (
+            <div className={styles.noSelection}>
+              <p>Select a form to view details and edit mappings</p>
+            </div>
+          )}
+        </div>
+      </div>
       
       {selectedForm && data && (
         <div className={styles.mappingEditorContainer}>
