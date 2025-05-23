@@ -1,16 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FormNode, GraphData } from '../../types/graph';
 import { FieldMapping, MappingSource } from '../../types/mappings';
 import { useMappings } from '../../hooks/useMappings';
 import { SourceSelectorModal } from '../modals/SourceSelectorModal';
 import { MappingStatus } from './MappingStatus';
 import { getFieldSchema } from '../../lib/utils/validation';
+import styles from '../../styles/MappingEditor.module.css';
 
 interface MappingEditorProps {
   form: FormNode;
   graphData: GraphData;
   onClose: () => void;
 }
+
+interface FieldType {
+  type: string;
+  compatibleTypes: string[];
+}
+
+const FIELD_TYPES: Record<string, FieldType> = {
+  string: { type: 'string', compatibleTypes: ['string', 'text'] },
+  number: { type: 'number', compatibleTypes: ['number', 'integer'] },
+  boolean: { type: 'boolean', compatibleTypes: ['boolean'] },
+  date: { type: 'date', compatibleTypes: ['date', 'datetime'] },
+  text: { type: 'text', compatibleTypes: ['string', 'text'] },
+  integer: { type: 'integer', compatibleTypes: ['number', 'integer'] },
+  datetime: { type: 'datetime', compatibleTypes: ['date', 'datetime'] }
+};
 
 export const MappingEditor: React.FC<MappingEditorProps> = ({ 
   form, 
@@ -20,6 +36,9 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSource, setSelectedSource] = useState<string>('');
+  const [selectedTarget, setSelectedTarget] = useState<string>('');
+  const [validationError, setValidationError] = useState<string | null>(null);
   
   const {
     formMappings,
@@ -75,57 +94,108 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
   const formMappingsList = formMappings[form.id] || [];
   const availableSources = selectedField ? getAvailableSources(form.id, [selectedField]) : [];
 
+  const getFieldType = (fieldName: string, formId: string): string => {
+    const form = graphData.nodes.find(n => n.id === formId);
+    if (!form) return 'string';
+    return form.data.input_mapping[fieldName]?.type || 'string';
+  };
+
+  const validateFieldTypes = (sourceField: string, targetField: string) => {
+    const sourceType = getFieldType(sourceField, selectedSource);
+    const targetType = getFieldType(targetField, form.id);
+    
+    const sourceTypeInfo = FIELD_TYPES[sourceType];
+    const targetTypeInfo = FIELD_TYPES[targetType];
+
+    if (!sourceTypeInfo || !targetTypeInfo) {
+      setValidationError('Unknown field type');
+      return false;
+    }
+
+    if (!sourceTypeInfo.compatibleTypes.includes(targetType)) {
+      setValidationError(`Incompatible field types: ${sourceType} cannot be mapped to ${targetType}`);
+      return false;
+    }
+
+    setValidationError(null);
+    return true;
+  };
+
+  const handleSourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedSource(e.target.value);
+    setValidationError(null);
+  };
+
+  const handleTargetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedTarget(e.target.value);
+    if (selectedSource) {
+      validateFieldTypes(selectedSource, e.target.value);
+    }
+  };
+
   return (
-    <div className="mapping-editor">
-      <div className="mapping-editor-header">
-        <h3>Mappings for {form.name}</h3>
-        <button className="close-button" onClick={onClose}>×</button>
+    <div className={styles.mappingEditor}>
+      <div className={styles.header}>
+        <h2>Edit Mappings for {form.data.name}</h2>
+        <button className={styles.closeButton} onClick={onClose}>×</button>
       </div>
-      
-      {error && (
-        <div className="error-banner">
-          {error}
-        </div>
-      )}
-      
-      <div className="mappings-list">
-        {formMappingsList.map(mapping => {
-          const formSchema = graphData.forms.find(f => f.id === form.id)?.field_schema;
-          const targetSchema = formSchema ? getFieldSchema(formSchema.properties, [mapping.targetFieldId]) : null;
-          
-          let sourceSchema;
-          if (mapping.source.type === 'global') {
-            sourceSchema = { type: 'string' };
-          } else {
-            const sourceForm = graphData.forms.find(f => f.id === mapping.source.formId)?.field_schema;
-            sourceSchema = sourceForm ? getFieldSchema(sourceForm.properties, [mapping.source.fieldId]) : null;
-          }
 
-          return (
-            <div key={mapping.id} className="mapping-item">
-              <div className="mapping-info">
-                <span className="target-field">{mapping.targetFieldId}</span>
-                <span className="mapping-arrow">←</span>
-                <span className="source-field">{mapping.source.label}</span>
-              </div>
+      <div className={styles.content}>
+        <div className={styles.mappingForm}>
+          <div className={styles.formGroup}>
+            <label>Source Form</label>
+            <select 
+              value={selectedSource} 
+              onChange={handleSourceChange}
+              data-testid="source-form"
+            >
+              <option value="">Select a form...</option>
+              {getAvailableSources(form.id, []).map(source => (
+                <option key={source.formId} value={source.formId}>
+                  {source.formId}
+                </option>
+              ))}
+            </select>
+          </div>
 
-              {targetSchema && sourceSchema && (
-                <MappingStatus
-                  mapping={mapping}
-                  sourceSchema={sourceSchema}
-                  targetSchema={targetSchema}
-                />
-              )}
-
-              <button 
-                onClick={() => removeMapping(form.id, mapping.id)}
-                className="remove-mapping"
+          {selectedSource && (
+            <div className={styles.formGroup}>
+              <label>Source Field</label>
+              <select 
+                value={selectedTarget} 
+                onChange={handleTargetChange}
+                data-testid="source-field"
               >
-                Remove
-              </button>
+                <option value="">Select a field...</option>
+                {getAvailableSources(form.id, [selectedTarget]).map(field => (
+                  <option key={field} value={field}>
+                    {field}
+                  </option>
+                ))}
+              </select>
             </div>
-          );
-        })}
+          )}
+
+          {validationError && (
+            <div className={styles.mappingError} data-testid="mapping-error">
+              {validationError}
+            </div>
+          )}
+
+          <div className={styles.actions}>
+            <button 
+              className={styles.saveButton}
+              disabled={!!validationError || !selectedSource || !selectedTarget}
+              onClick={() => {
+                if (selectedSource && selectedTarget) {
+                  handleAddMapping(selectedTarget);
+                }
+              }}
+            >
+              Save Mapping
+            </button>
+          </div>
+        </div>
       </div>
 
       <SourceSelectorModal
