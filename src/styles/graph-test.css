@@ -1,0 +1,157 @@
+.graph-test {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.graph-test h2 {
+  color: #2c3e50;
+  margin-bottom: 2rem;
+}
+
+.graph-stats {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.graph-stats h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.graph-stats ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.graph-stats li {
+  margin-bottom: 0.5rem;
+  color: #4b5563;
+}
+
+.form-list {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.form-list h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.form-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.form-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.form-item:last-child {
+  border-bottom: none;
+}
+
+.form-item strong {
+  color: #2c3e50;
+  flex: 1;
+}
+
+.form-item span {
+  color: #6b7280;
+}
+
+.edit-mappings {
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.edit-mappings:hover {
+  background: #2563eb;
+}
+
+.dependency-graph {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.dependency-graph h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.dependency-graph ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dependency-graph li {
+  margin-bottom: 0.5rem;
+  color: #4b5563;
+}
+
+.dependency-graph ul ul {
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.raw-data {
+  background: #1f2937;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 2rem;
+}
+
+.raw-data h3 {
+  color: #e5e7eb;
+  margin-bottom: 1rem;
+}
+
+.raw-data pre {
+  color: #e5e7eb;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: #dc2626;
+  background: #fee2e2;
+  border-radius: 8px;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  border-radius: 8px;
+} 
