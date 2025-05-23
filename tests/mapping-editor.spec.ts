@@ -136,4 +136,50 @@ test('applies complex data transformations', async ({ page }) => {
   // Verify phone number is formatted correctly
   const formattedPhone = await page.textContent('.previewItem:last-child pre');
   expect(formattedPhone).toMatch(/\(\d{3}\) \d{3}-\d{4}/);
+});
+
+test('validates healthcare-specific fields', async ({ page }) => {
+  // Navigate to the form structure page
+  await page.goto('http://localhost:3003');
+  await page.waitForSelector('.dagNode');
+
+  // Click on a form to view details
+  await page.click('.dagNode');
+  await page.waitForSelector('.formDetails');
+
+  // Click edit mappings button
+  await page.click('button:has-text("Edit Mappings")');
+  await page.waitForSelector('.mapping-editor');
+
+  // Select source form
+  await page.selectOption('select[data-testid="source-form"]', 'form1');
+
+  // Test phone number validation
+  await page.selectOption('select[data-testid="source-field"]', 'phone_field');
+  await page.selectOption('select[data-testid="target-field"]', 'phone');
+  
+  // Verify validation rules are shown
+  const validationRules = await page.textContent('.validationRules');
+  expect(validationRules).toContain('Phone must be in format (XXX) XXX-XXXX');
+
+  // Test invalid phone number
+  await page.selectOption('select[data-testid="transformation-select"]', 'formatPhone');
+  const errorMessage = await page.textContent('.validationError');
+  expect(errorMessage).toContain('Phone must be in format');
+
+  // Test email validation
+  await page.selectOption('select[data-testid="source-field"]', 'email_field');
+  await page.selectOption('select[data-testid="target-field"]', 'email');
+  
+  // Verify validation rules are shown
+  const emailRules = await page.textContent('.validationRules');
+  expect(emailRules).toContain('Invalid email format');
+
+  // Test date of birth validation
+  await page.selectOption('select[data-testid="source-field"]', 'dob_field');
+  await page.selectOption('select[data-testid="target-field"]', 'date_of_birth');
+  
+  // Verify validation rules are shown
+  const dobRules = await page.textContent('.validationRules');
+  expect(dobRules).toContain('Date of birth must be between 1900 and today');
 }); 

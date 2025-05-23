@@ -127,6 +127,67 @@ const TRANSFORMATIONS = {
   }
 };
 
+// Healthcare field validation rules
+const HEALTHCARE_VALIDATIONS = {
+  // Patient identifiers
+  patient_id: {
+    pattern: /^[A-Z0-9]{8}$/,
+    message: 'Patient ID must be 8 alphanumeric characters'
+  },
+  ssn: {
+    pattern: /^\d{3}-\d{2}-\d{4}$/,
+    message: 'SSN must be in format XXX-XX-XXXX'
+  },
+  mrn: {
+    pattern: /^[A-Z0-9]{10}$/,
+    message: 'Medical Record Number must be 10 alphanumeric characters'
+  },
+  
+  // Contact information
+  phone: {
+    pattern: /^\(\d{3}\) \d{3}-\d{4}$/,
+    message: 'Phone must be in format (XXX) XXX-XXXX'
+  },
+  email: {
+    pattern: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+    message: 'Invalid email format'
+  },
+  
+  // Medical information
+  date_of_birth: {
+    validate: (value: string) => {
+      const date = new Date(value);
+      const now = new Date();
+      return date < now && date > new Date(1900, 0, 1);
+    },
+    message: 'Date of birth must be between 1900 and today'
+  },
+  height: {
+    pattern: /^\d{1,3}(\.\d{1,2})?$/,
+    message: 'Height must be a number between 0 and 999.99'
+  },
+  weight: {
+    pattern: /^\d{1,3}(\.\d{1,2})?$/,
+    message: 'Weight must be a number between 0 and 999.99'
+  },
+  blood_type: {
+    pattern: /^(A|B|AB|O)[+-]$/,
+    message: 'Blood type must be A+, A-, B+, B-, AB+, AB-, O+, or O-'
+  }
+};
+
+// Field type to validation mapping
+const FIELD_VALIDATIONS: Record<string, string[]> = {
+  patient_id: ['patient_id', 'mrn'],
+  ssn: ['ssn'],
+  phone: ['phone'],
+  email: ['email'],
+  date_of_birth: ['date_of_birth'],
+  height: ['height'],
+  weight: ['weight'],
+  blood_type: ['blood_type']
+};
+
 export const MappingEditor: React.FC<MappingEditorProps> = ({ 
   form, 
   graphData,
@@ -145,6 +206,7 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [selectedTransformation, setSelectedTransformation] = useState<string>('');
   const [transformationParams, setTransformationParams] = useState<Record<string, string>>({});
+  const [validationRules, setValidationRules] = useState<string[]>([]);
   
   const {
     formMappings,
@@ -265,6 +327,28 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
     }
   };
 
+  const validateField = (value: any, fieldName: string): boolean => {
+    const rules = FIELD_VALIDATIONS[fieldName] || [];
+    
+    for (const rule of rules) {
+      const validation = HEALTHCARE_VALIDATIONS[rule as keyof typeof HEALTHCARE_VALIDATIONS];
+      if (!validation) continue;
+
+      if (validation.pattern && !validation.pattern.test(value)) {
+        setValidationError(validation.message);
+        return false;
+      }
+
+      if (validation.validate && !validation.validate(value)) {
+        setValidationError(validation.message);
+        return false;
+      }
+    }
+
+    setValidationError(null);
+    return true;
+  };
+
   const updatePreview = (sourceField: string, targetField: string) => {
     const sourceType = getFieldType(sourceField, selectedSource);
     const targetType = getFieldType(targetField, form.id);
@@ -275,6 +359,9 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
       selectedTransformation,
       transformationParams
     );
+
+    // Validate the transformed value
+    validateField(transformedValue, targetField);
 
     setPreviewData({
       raw: rawValue,
@@ -289,10 +376,16 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
   };
 
   const handleTargetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedTarget(e.target.value);
+    const targetField = e.target.value;
+    setSelectedTarget(targetField);
+    
+    // Set validation rules for the selected field
+    const rules = FIELD_VALIDATIONS[targetField] || [];
+    setValidationRules(rules);
+    
     if (selectedSource) {
-      validateFieldTypes(selectedSource, e.target.value);
-      updatePreview(selectedSource, e.target.value);
+      validateFieldTypes(selectedSource, targetField);
+      updatePreview(selectedSource, targetField);
     }
   };
 
@@ -401,8 +494,21 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
             </div>
           )}
 
+          {validationRules.length > 0 && (
+            <div className={styles.validationRules}>
+              <h4>Validation Rules</h4>
+              <ul>
+                {validationRules.map(rule => (
+                  <li key={rule}>
+                    {HEALTHCARE_VALIDATIONS[rule as keyof typeof HEALTHCARE_VALIDATIONS]?.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {validationError && (
-            <div className={styles.mappingError} data-testid="mapping-error">
+            <div className={styles.validationError} data-testid="validation-error">
               {validationError}
             </div>
           )}
