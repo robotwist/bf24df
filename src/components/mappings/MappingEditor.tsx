@@ -65,6 +65,35 @@ const transformValue = (value: any, sourceType: string, targetType: string): any
   }
 };
 
+// Healthcare field mapping templates
+const HEALTHCARE_TEMPLATES = {
+  patient: {
+    name: 'Patient Information',
+    fields: [
+      { source: 'first_name', target: 'patient_first_name', type: 'string' },
+      { source: 'last_name', target: 'patient_last_name', type: 'string' },
+      { source: 'date_of_birth', target: 'patient_dob', type: 'date' },
+      { source: 'gender', target: 'patient_gender', type: 'string' }
+    ]
+  },
+  contact: {
+    name: 'Contact Information',
+    fields: [
+      { source: 'phone', target: 'contact_phone', type: 'string' },
+      { source: 'email', target: 'contact_email', type: 'string' },
+      { source: 'address', target: 'contact_address', type: 'text' }
+    ]
+  },
+  medical: {
+    name: 'Medical History',
+    fields: [
+      { source: 'allergies', target: 'patient_allergies', type: 'text' },
+      { source: 'conditions', target: 'patient_conditions', type: 'text' },
+      { source: 'medications', target: 'patient_medications', type: 'text' }
+    ]
+  }
+};
+
 export const MappingEditor: React.FC<MappingEditorProps> = ({ 
   form, 
   graphData,
@@ -80,6 +109,7 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
     raw: any;
     transformed: any;
   } | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   
   const {
     formMappings,
@@ -189,6 +219,32 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
     }
   };
 
+  const handleTemplateSelect = (templateKey: string) => {
+    setSelectedTemplate(templateKey);
+    const template = HEALTHCARE_TEMPLATES[templateKey as keyof typeof HEALTHCARE_TEMPLATES];
+    
+    if (template) {
+      // Apply all field mappings from the template
+      template.fields.forEach(field => {
+        const source: MappingSource = {
+          type: 'form',
+          formId: selectedSource,
+          fieldId: field.source,
+          label: `${field.source} (${template.name})`
+        };
+
+        const newMapping: FieldMapping = {
+          id: `${form.id}-${field.target}-${Date.now()}`,
+          targetFormId: form.id,
+          targetFieldId: field.target,
+          source
+        };
+
+        addMapping(form.id, newMapping);
+      });
+    }
+  };
+
   return (
     <div className={styles.mappingEditor}>
       <div className={styles.header}>
@@ -198,6 +254,26 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
 
       <div className={styles.content}>
         <div className={styles.mappingForm}>
+          {/* Template Selection */}
+          <div className={styles.templateSection}>
+            <h3>Healthcare Field Templates</h3>
+            <div className={styles.templateGrid}>
+              {Object.entries(HEALTHCARE_TEMPLATES).map(([key, template]) => (
+                <button
+                  key={key}
+                  className={`${styles.templateButton} ${
+                    selectedTemplate === key ? styles.selected : ''
+                  }`}
+                  onClick={() => handleTemplateSelect(key)}
+                  disabled={!selectedSource}
+                >
+                  <h4>{template.name}</h4>
+                  <p>{template.fields.length} fields</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className={styles.formGroup}>
             <label>Source Form</label>
             <select 

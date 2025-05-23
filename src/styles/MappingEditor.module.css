@@ -150,6 +150,64 @@
   word-break: break-word;
 }
 
+.templateSection {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.templateSection h3 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.templateGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.templateButton {
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.templateButton:hover:not(:disabled) {
+  background: #e3f2fd;
+  border-color: #1976d2;
+  transform: translateY(-2px);
+}
+
+.templateButton.selected {
+  background: #e3f2fd;
+  border-color: #1976d2;
+}
+
+.templateButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.templateButton h4 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.templateButton p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
 @media (max-width: 768px) {
   .mappingEditor {
     width: 95%;
@@ -165,6 +223,10 @@
   }
 
   .previewContent {
+    grid-template-columns: 1fr;
+  }
+
+  .templateGrid {
     grid-template-columns: 1fr;
   }
 } 

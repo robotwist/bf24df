@@ -58,4 +58,37 @@ test('shows data preview when selecting source and target fields', async ({ page
   
   expect(rawValue).toContain('Sample Text');
   expect(transformedValue).toContain('Sample Text');
+});
+
+test('applies healthcare field templates', async ({ page }) => {
+  // Navigate to the form structure page
+  await page.goto('http://localhost:3003');
+  await page.waitForSelector('.dagNode');
+
+  // Click on a form to view details
+  await page.click('.dagNode');
+  await page.waitForSelector('.formDetails');
+
+  // Click edit mappings button
+  await page.click('button:has-text("Edit Mappings")');
+  await page.waitForSelector('.mapping-editor');
+
+  // Select source form
+  await page.selectOption('select[data-testid="source-form"]', 'form1');
+
+  // Verify template buttons are enabled
+  const templateButtons = await page.$$('.templateButton:not([disabled])');
+  expect(templateButtons.length).toBeGreaterThan(0);
+
+  // Click on Patient Information template
+  await page.click('button:has-text("Patient Information")');
+
+  // Verify mappings were created
+  const mappings = await page.$$('.mapping-item');
+  expect(mappings.length).toBeGreaterThan(0);
+
+  // Verify specific fields were mapped
+  const mappingText = await page.textContent('.mapping-info');
+  expect(mappingText).toContain('patient_first_name');
+  expect(mappingText).toContain('patient_last_name');
 }); 
