@@ -91,4 +91,49 @@ test('applies healthcare field templates', async ({ page }) => {
   const mappingText = await page.textContent('.mapping-info');
   expect(mappingText).toContain('patient_first_name');
   expect(mappingText).toContain('patient_last_name');
+});
+
+test('applies complex data transformations', async ({ page }) => {
+  // Navigate to the form structure page
+  await page.goto('http://localhost:3003');
+  await page.waitForSelector('.dagNode');
+
+  // Click on a form to view details
+  await page.click('.dagNode');
+  await page.waitForSelector('.formDetails');
+
+  // Click edit mappings button
+  await page.click('button:has-text("Edit Mappings")');
+  await page.waitForSelector('.mapping-editor');
+
+  // Select source and target fields
+  await page.selectOption('select[data-testid="source-form"]', 'form1');
+  await page.selectOption('select[data-testid="source-field"]', 'string_field');
+  await page.selectOption('select[data-testid="target-field"]', 'text_field');
+
+  // Select a transformation
+  await page.selectOption('select[data-testid="transformation-select"]', 'uppercase');
+
+  // Verify preview shows transformed value
+  const transformedValue = await page.textContent('.previewItem:last-child pre');
+  expect(transformedValue).toContain('SAMPLE TEXT');
+
+  // Test replace transformation
+  await page.selectOption('select[data-testid="transformation-select"]', 'replace');
+  
+  // Enter replace parameters
+  await page.fill('input[placeholder="Text to replace"]', 'Sample');
+  await page.fill('input[placeholder="Replacement text"]', 'Test');
+  
+  // Verify preview shows replaced value
+  const replacedValue = await page.textContent('.previewItem:last-child pre');
+  expect(replacedValue).toContain('Test Text');
+
+  // Test healthcare specific transformation
+  await page.selectOption('select[data-testid="source-field"]', 'phone_field');
+  await page.selectOption('select[data-testid="transformation-select"]', 'formatPhone');
+  
+  // Verify phone number is formatted correctly
+  const formattedPhone = await page.textContent('.previewItem:last-child pre');
+  expect(formattedPhone).toMatch(/\(\d{3}\) \d{3}-\d{4}/);
 }); 

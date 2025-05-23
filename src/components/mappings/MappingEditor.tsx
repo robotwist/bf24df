@@ -94,6 +94,39 @@ const HEALTHCARE_TEMPLATES = {
   }
 };
 
+// Complex transformation functions
+const TRANSFORMATIONS = {
+  // String transformations
+  uppercase: (value: string) => value.toUpperCase(),
+  lowercase: (value: string) => value.toLowerCase(),
+  capitalize: (value: string) => value.charAt(0).toUpperCase() + value.slice(1).toLowerCase(),
+  trim: (value: string) => value.trim(),
+  
+  // Number transformations
+  round: (value: number) => Math.round(value),
+  floor: (value: number) => Math.floor(value),
+  ceil: (value: number) => Math.ceil(value),
+  
+  // Date transformations
+  formatDate: (value: string) => new Date(value).toLocaleDateString(),
+  formatDateTime: (value: string) => new Date(value).toLocaleString(),
+  
+  // Custom transformations
+  concat: (value: string, separator: string = ' ') => value.split(separator).join(''),
+  split: (value: string, separator: string = ' ') => value.split(separator),
+  replace: (value: string, search: string, replace: string) => value.replace(search, replace),
+  
+  // Healthcare specific
+  formatPhone: (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+  },
+  formatSSN: (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    return cleaned.replace(/(\d{3})(\d{2})(\d{4})/, '$1-$2-$3');
+  }
+};
+
 export const MappingEditor: React.FC<MappingEditorProps> = ({ 
   form, 
   graphData,
@@ -110,6 +143,8 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
     transformed: any;
   } | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [selectedTransformation, setSelectedTransformation] = useState<string>('');
+  const [transformationParams, setTransformationParams] = useState<Record<string, string>>({});
   
   const {
     formMappings,
@@ -192,12 +227,54 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
     return true;
   };
 
+  const getAvailableTransformations = (sourceType: string, targetType: string): string[] => {
+    const transformations: string[] = [];
+    
+    if (sourceType === 'string' || targetType === 'string') {
+      transformations.push('uppercase', 'lowercase', 'capitalize', 'trim');
+    }
+    
+    if (sourceType === 'number' || targetType === 'number') {
+      transformations.push('round', 'floor', 'ceil');
+    }
+    
+    if (sourceType === 'date' || targetType === 'date' || 
+        sourceType === 'datetime' || targetType === 'datetime') {
+      transformations.push('formatDate', 'formatDateTime');
+    }
+    
+    // Add healthcare specific transformations
+    if (sourceType === 'string') {
+      transformations.push('formatPhone', 'formatSSN');
+    }
+    
+    return transformations;
+  };
+
+  const applyTransformation = (value: any, transformation: string, params: Record<string, string> = {}): any => {
+    if (!transformation) return value;
+    
+    const transformFn = TRANSFORMATIONS[transformation as keyof typeof TRANSFORMATIONS];
+    if (!transformFn) return value;
+    
+    try {
+      return transformFn(value, ...Object.values(params));
+    } catch (error) {
+      console.error('Error applying transformation:', error);
+      return value;
+    }
+  };
+
   const updatePreview = (sourceField: string, targetField: string) => {
     const sourceType = getFieldType(sourceField, selectedSource);
     const targetType = getFieldType(targetField, form.id);
     
     const rawValue = MOCK_DATA[sourceField] || 'No preview available';
-    const transformedValue = transformValue(rawValue, sourceType, targetType);
+    const transformedValue = applyTransformation(
+      transformValue(rawValue, sourceType, targetType),
+      selectedTransformation,
+      transformationParams
+    );
 
     setPreviewData({
       raw: rawValue,
@@ -327,6 +404,77 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
           {validationError && (
             <div className={styles.mappingError} data-testid="mapping-error">
               {validationError}
+            </div>
+          )}
+
+          {selectedSource && selectedTarget && (
+            <div className={styles.formGroup}>
+              <label>Transformation</label>
+              <select 
+                value={selectedTransformation} 
+                onChange={(e) => {
+                  setSelectedTransformation(e.target.value);
+                  updatePreview(selectedSource, selectedTarget);
+                }}
+                data-testid="transformation-select"
+              >
+                <option value="">No transformation</option>
+                {getAvailableTransformations(
+                  getFieldType(selectedSource, selectedSource),
+                  getFieldType(selectedTarget, form.id)
+                ).map(transform => (
+                  <option key={transform} value={transform}>
+                    {transform}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {selectedTransformation && (
+            <div className={styles.transformationParams}>
+              {selectedTransformation === 'concat' && (
+                <div className={styles.formGroup}>
+                  <label>Separator</label>
+                  <input 
+                    type="text" 
+                    value={transformationParams.separator || ' '}
+                    onChange={(e) => {
+                      setTransformationParams({ ...transformationParams, separator: e.target.value });
+                      updatePreview(selectedSource, selectedTarget);
+                    }}
+                    placeholder="Enter separator"
+                  />
+                </div>
+              )}
+              {selectedTransformation === 'replace' && (
+                <>
+                  <div className={styles.formGroup}>
+                    <label>Search</label>
+                    <input 
+                      type="text" 
+                      value={transformationParams.search || ''}
+                      onChange={(e) => {
+                        setTransformationParams({ ...transformationParams, search: e.target.value });
+                        updatePreview(selectedSource, selectedTarget);
+                      }}
+                      placeholder="Text to replace"
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label>Replace With</label>
+                    <input 
+                      type="text" 
+                      value={transformationParams.replace || ''}
+                      onChange={(e) => {
+                        setTransformationParams({ ...transformationParams, replace: e.target.value });
+                        updatePreview(selectedSource, selectedTarget);
+                      }}
+                      placeholder="Replacement text"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
 
