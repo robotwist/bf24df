@@ -1,13 +1,11 @@
 import React from 'react';
-import GraphTest from './components/GraphTest';
-import './styles/mappings.css';
-import './styles/graph-test.css';
+import FormStructure from "./components/FormStructure";
+import './App.css';
 
 function App() {
   return (
-    <div className="app">
-      <h1>Avantos Journey Builder</h1>
-      <GraphTest />
+    <div className="App">
+      <FormStructure />
     </div>
   );
 }

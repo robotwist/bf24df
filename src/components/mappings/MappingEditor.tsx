@@ -28,6 +28,43 @@ const FIELD_TYPES: Record<string, FieldType> = {
   datetime: { type: 'datetime', compatibleTypes: ['date', 'datetime'] }
 };
 
+// Mock data for preview
+const MOCK_DATA: Record<string, any> = {
+  string_field: 'Sample Text',
+  number_field: 42,
+  boolean_field: true,
+  date_field: '2024-03-20',
+  text_field: 'Long form text content',
+  integer_field: 100,
+  datetime_field: '2024-03-20T15:30:00Z'
+};
+
+const transformValue = (value: any, sourceType: string, targetType: string): any => {
+  if (sourceType === targetType) return value;
+
+  try {
+    switch (targetType) {
+      case 'number':
+      case 'integer':
+        return Number(value);
+      case 'boolean':
+        return Boolean(value);
+      case 'date':
+        return new Date(value).toISOString().split('T')[0];
+      case 'datetime':
+        return new Date(value).toISOString();
+      case 'string':
+      case 'text':
+        return String(value);
+      default:
+        return value;
+    }
+  } catch (error) {
+    console.error('Error transforming value:', error);
+    return value;
+  }
+};
+
 export const MappingEditor: React.FC<MappingEditorProps> = ({ 
   form, 
   graphData,
@@ -39,6 +76,10 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
   const [selectedSource, setSelectedSource] = useState<string>('');
   const [selectedTarget, setSelectedTarget] = useState<string>('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<{
+    raw: any;
+    transformed: any;
+  } | null>(null);
   
   const {
     formMappings,
@@ -121,15 +162,30 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
     return true;
   };
 
+  const updatePreview = (sourceField: string, targetField: string) => {
+    const sourceType = getFieldType(sourceField, selectedSource);
+    const targetType = getFieldType(targetField, form.id);
+    
+    const rawValue = MOCK_DATA[sourceField] || 'No preview available';
+    const transformedValue = transformValue(rawValue, sourceType, targetType);
+
+    setPreviewData({
+      raw: rawValue,
+      transformed: transformedValue
+    });
+  };
+
   const handleSourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedSource(e.target.value);
     setValidationError(null);
+    setPreviewData(null);
   };
 
   const handleTargetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedTarget(e.target.value);
     if (selectedSource) {
       validateFieldTypes(selectedSource, e.target.value);
+      updatePreview(selectedSource, e.target.value);
     }
   };
 
@@ -173,6 +229,22 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {previewData && (
+            <div className={styles.previewSection}>
+              <h3>Data Preview</h3>
+              <div className={styles.previewContent}>
+                <div className={styles.previewItem}>
+                  <label>Raw Value:</label>
+                  <pre>{JSON.stringify(previewData.raw, null, 2)}</pre>
+                </div>
+                <div className={styles.previewItem}>
+                  <label>Transformed Value:</label>
+                  <pre>{JSON.stringify(previewData.transformed, null, 2)}</pre>
+                </div>
+              </div>
             </div>
           )}
 

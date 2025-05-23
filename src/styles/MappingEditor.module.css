@@ -106,6 +106,50 @@
   cursor: not-allowed;
 }
 
+.previewSection {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.previewSection h3 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.previewContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.previewItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.previewItem label {
+  font-weight: 500;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.previewItem pre {
+  margin: 0;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 @media (max-width: 768px) {
   .mappingEditor {
     width: 95%;
@@ -118,5 +162,9 @@
 
   .content {
     padding: 1rem;
+  }
+
+  .previewContent {
+    grid-template-columns: 1fr;
   }
 } 
