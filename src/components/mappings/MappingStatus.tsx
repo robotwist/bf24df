@@ -4,8 +4,8 @@ import { validateMapping } from '../../lib/utils/validation';
 
 interface MappingStatusProps {
   mapping: FieldMapping;
-  sourceSchema: any; // We'll type this properly once we have the schema types
-  targetSchema: any;
+  sourceSchema: FormSchema;
+  targetSchema: FormSchema;
 }
 
 export const MappingStatus: React.FC<MappingStatusProps> = ({

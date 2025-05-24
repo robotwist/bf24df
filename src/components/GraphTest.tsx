@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useGraphData } from '../hooks/useGraphData';
 import { GraphData, FormNode } from '../types/graph';
 import { MappingEditor } from './mappings/MappingEditor';
+import styles from '../styles/FormStructure.module.css';
 
-const GraphTest: React.FC = () => {
+const FormStructure: React.FC = () => {
   const { data, loading, error } = useGraphData('mockorg', 'mockblueprint');
   const [selectedForm, setSelectedForm] = useState<FormNode | null>(null);
 
   useEffect(() => {
-    console.log('GraphTest state:', { loading, error, hasData: !!data });
+    console.log('FormStructure state:', { loading, error, hasData: !!data });
   }, [loading, error, data]);
 
   const handleEditMappings = (form: FormNode) => {
@@ -20,95 +21,115 @@ const GraphTest: React.FC = () => {
     setSelectedForm(null);
   };
 
-  const renderGraphStats = (graphData: GraphData) => {
-    console.log('Rendering graph stats with data:', graphData);
-    return (
-      <div className="graph-stats">
-        <h3>Graph Structure</h3>
-        <ul>
-          <li>Nodes: {graphData.nodes.length}</li>
-          <li>Forms: {graphData.forms.length}</li>
-          <li>Edges: {graphData.edges.length}</li>
-        </ul>
+  const renderGraphStats = (graphData: GraphData) => (
+    <div className={styles.stats}>
+      <div className={styles.statCard}>
+        <h4>Forms</h4>
+        <span className={styles.statValue}>{graphData.nodes.length}</span>
       </div>
-    );
-  };
-
-  const renderFormList = (graphData: GraphData) => (
-    <div className="form-list">
-      <h3>Forms</h3>
-      <ul>
-        {graphData.forms.map(form => (
-          <li key={form.id} className="form-item">
-            <strong>{form.name}</strong>
-            <span>Fields: {Object.keys(form.field_schema.properties).length}</span>
-            <button 
-              className="edit-mappings"
-              onClick={() => handleEditMappings(form)}
-            >
-              Edit Mappings
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className={styles.statCard}>
+        <h4>Dependencies</h4>
+        <span className={styles.statValue}>{graphData.edges.length}</span>
+      </div>
+      <div className={styles.statCard}>
+        <h4>Total Fields</h4>
+        <span className={styles.statValue}>
+          {graphData.nodes.reduce((acc, node) => 
+            acc + Object.keys(node.data.input_mapping).length, 0
+          )}
+        </span>
+      </div>
     </div>
   );
 
-  const renderDependencyGraph = (graphData: GraphData) => (
-    <div className="dependency-graph">
-      <h3>Dependencies</h3>
-      <ul>
+  const renderFormList = (graphData: GraphData) => (
+    <div className={styles.formList}>
+      <h3>Forms</h3>
+      <div className={styles.formGrid}>
         {graphData.nodes.map(node => (
-          <li key={node.id}>
-            <strong>{node.data.name}</strong>
-            {node.data.prerequisites.length > 0 ? (
-              <ul>
-                {node.data.prerequisites.map(prereqId => {
-                  const prereq = graphData.nodes.find(n => n.id === prereqId);
-                  return (
-                    <li key={prereqId}>
-                      ← {prereq?.data.name || prereqId}
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <span> (No dependencies)</span>
-            )}
-          </li>
+          <div key={node.id} className={styles.formCard}>
+            <div className={styles.formHeader}>
+              <h4>{node.data.name}</h4>
+              <span className={styles.fieldCount}>
+                {Object.keys(node.data.input_mapping).length} fields
+              </span>
+            </div>
+            <div className={styles.formDependencies}>
+              {node.data.prerequisites.length > 0 ? (
+                <div className={styles.dependencyList}>
+                  <span className={styles.dependencyLabel}>Depends on:</span>
+                  {node.data.prerequisites.map((prereqId: string) => {
+                    const prereq = graphData.nodes.find(n => n.id === prereqId);
+                    return (
+                      <span key={prereqId} className={styles.dependency}>
+                        {prereq?.data.name || prereqId}
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : (
+                <span className={styles.noDependencies}>No dependencies</span>
+              )}
+            </div>
+            <button 
+              className={styles.editButton}
+              onClick={() => handleEditMappings(node)}
+            >
+              Edit Mappings
+            </button>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 
   if (loading) {
-    console.log('Rendering loading state');
-    return <div className="loading">Loading graph data...</div>;
-  }
-  if (error) {
-    console.log('Rendering error state:', error);
-    if (error instanceof Error) {
-      console.error('Error details:', error.message, error.stack);
-    } else {
-      console.error('Error details (non-Error object):', error);
-    }
-    return <div className="error">Error: {error.message || String(error)}</div>;
-  }
-  if (!data) {
-    console.log('Rendering no data state');
-    return <div className="no-data">No data available</div>;
+    return (
+      <div className={styles.loading}>
+        <div className={styles.spinner}></div>
+        <p>Loading form structure...</p>
+      </div>
+    );
   }
 
-  console.log('Rendering full component with data');
+  if (error) {
+    return (
+      <div className={styles.error}>
+        <h3>Error Loading Forms</h3>
+        <p>{error instanceof Error ? error.message : String(error)}</p>
+        <button 
+          className={styles.retryButton}
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className={styles.noData}>
+        <h3>No Forms Available</h3>
+        <p>There are no forms configured in this blueprint.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="graph-test">
-      <h2>Graph Data Test</h2>
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <h1>Form Structure</h1>
+        <p className={styles.subtitle}>
+          View and manage form dependencies and field mappings
+        </p>
+      </header>
+
       {renderGraphStats(data)}
       {renderFormList(data)}
-      {renderDependencyGraph(data)}
       
       {selectedForm && data && (
-        <div className="mapping-editor-container">
+        <div className={styles.mappingEditorContainer}>
           <MappingEditor 
             form={selectedForm} 
             graphData={data}
@@ -116,13 +137,8 @@ const GraphTest: React.FC = () => {
           />
         </div>
       )}
-      
-      <div className="raw-data">
-        <h3>Raw Data</h3>
-        <pre>{JSON.stringify(data, null, 2)}</pre>
-      </div>
     </div>
   );
 };
 
-export default GraphTest; 
+export default FormStructure; 

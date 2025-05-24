@@ -8,6 +8,7 @@ const FormStructure: React.FC = () => {
   const { data, loading, error } = useGraphData('mockorg', 'mockblueprint');
   const [selectedForm, setSelectedForm] = useState<FormNode | null>(null);
   const [hoveredForm, setHoveredForm] = useState<string | null>(null);
+  const [isMappingEditorOpen, setIsMappingEditorOpen] = useState(false);
 
   useEffect(() => {
     console.log('FormStructure state:', { loading, error, hasData: !!data });
@@ -23,17 +24,17 @@ const FormStructure: React.FC = () => {
   };
 
   const renderGraphStats = (graphData: GraphData) => (
-    <div className={styles.stats}>
+    <div className={styles.stats} data-testid="stats">
       <div className={styles.statCard}>
-        <h4>Forms</h4>
+        <h4>Forms:</h4>
         <span className={styles.statValue}>{graphData.nodes.length}</span>
       </div>
       <div className={styles.statCard}>
-        <h4>Dependencies</h4>
+        <h4>Dependencies:</h4>
         <span className={styles.statValue}>{graphData.edges.length}</span>
       </div>
       <div className={styles.statCard}>
-        <h4>Total Fields</h4>
+        <h4>Total Fields:</h4>
         <span className={styles.statValue}>
           {graphData.nodes.reduce((acc, node) => 
             acc + Object.keys(node.data.input_mapping).length, 0
@@ -56,6 +57,7 @@ const FormStructure: React.FC = () => {
             onClick={() => setSelectedForm(node)}
             onMouseEnter={() => setHoveredForm(node.id)}
             onMouseLeave={() => setHoveredForm(null)}
+            data-testid="dag-node"
           >
             <div className={styles.nodeContent}>
               <h4>{node.data.name}</h4>
@@ -87,7 +89,7 @@ const FormStructure: React.FC = () => {
   );
 
   const renderFormDetails = (form: FormNode) => (
-    <div className={styles.formDetails}>
+    <div className={styles.formDetails} data-testid="form-details">
       <h3>{form.data.name}</h3>
       <div className={styles.formInfo}>
         <div className={styles.infoSection}>
@@ -121,7 +123,7 @@ const FormStructure: React.FC = () => {
       </div>
       <button 
         className={styles.editButton}
-        onClick={() => handleEditMappings(form)}
+        onClick={() => setIsMappingEditorOpen(true)}
       >
         Edit Mappings
       </button>
@@ -187,7 +189,7 @@ const FormStructure: React.FC = () => {
         </div>
       </div>
       
-      {selectedForm && data && (
+      {isMappingEditorOpen && selectedForm && data && (
         <div className={styles.mappingEditorContainer}>
           <MappingEditor 
             form={selectedForm} 

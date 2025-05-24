@@ -1,8 +1,15 @@
 import { GraphData } from '../../types/graph';
+import { mockGraphData } from './mockData';
 
 const API_BASE_URL = '/api/v1';
+const IS_TEST = process.env.NODE_ENV === 'test';
 
 export const fetchGraphData = async (orgId: string, blueprintId: string): Promise<GraphData> => {
+  if (IS_TEST) {
+    console.log('Using mock graph data for tests');
+    return mockGraphData;
+  }
+
   const url = `${API_BASE_URL}/${orgId}/actions/blueprints/${blueprintId}/graph`;
   console.log('Fetching graph data from:', url);
   

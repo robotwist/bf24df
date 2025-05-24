@@ -128,7 +128,9 @@ const areTypesCompatible = (sourceType: string, targetType: string): boolean => 
     return false;
   }
   
-  return sourceTypeInfo.compatibleTypes.includes(targetType);
+  // Check both ways - source can be mapped to target AND target can accept source
+  return sourceTypeInfo.compatibleTypes.includes(targetType) && 
+         targetTypeInfo.compatibleTypes.includes(sourceType);
 };
 
 export const MappingEditor: React.FC<MappingEditorProps> = ({ 
@@ -243,7 +245,8 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
   const getFieldType = (fieldName: string, formId: string): string => {
     const form = graphData.nodes.find(n => n.id === formId);
     if (!form) return 'string';
-    return form.data.input_mapping[fieldName]?.type || 'string';
+    const type = form.data.input_mapping[fieldName]?.type;
+    return type || 'string';
   };
 
   const validateField = (field: string, value: string) => {
@@ -324,27 +327,38 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
 
   const handleSourceFieldChange = (field: string) => {
     setSelectedSourceField(field);
-    setValidationError(null);
     setPreviewData(null);
 
-    const sourceSchema = graphData.forms.find(f => f.id === selectedSource)?.field_schema?.properties || {};
-    const targetSchema = graphData.forms.find(f => f.id === form.id)?.field_schema?.properties || {};
-    const sourceType = getFieldSchema(sourceSchema, [field])?.type || 'string';
-    const targetType = getFieldSchema(targetSchema, [selectedTarget])?.type || 'string';
+    // Only validate if we have both source and target
+    if (selectedTarget) {
+      const sourceSchema = graphData.forms.find(f => f.id === selectedSource)?.field_schema?.properties || {};
+      const targetSchema = graphData.forms.find(f => f.id === form.id)?.field_schema?.properties || {};
+      const sourceType = getFieldSchema(sourceSchema, [field])?.type || 'string';
+      const targetType = getFieldSchema(targetSchema, [selectedTarget])?.type || 'string';
 
-    if (!areTypesCompatible(sourceType, targetType)) {
-      setValidationError(`Incompatible field types: ${sourceType} cannot be mapped to ${targetType}`);
-      return;
+      if (!areTypesCompatible(sourceType, targetType)) {
+        setValidationError(`Incompatible field types: ${sourceType} cannot be mapped to ${targetType}`);
+        return;
+      }
     }
 
-    // Update preview with mock data
-    const mockValue = MOCK_DATA[field] || 'Sample Value';
-    const transformedValue = String(transformValue(mockValue, sourceType, targetType));
-    setPreviewData({
-      source: mockValue,
-      transformed: transformedValue,
-      target: transformedValue
-    });
+    // Only clear error if validation passes
+    setValidationError(null);
+
+    // Update preview if we have both fields
+    if (selectedTarget) {
+      const sourceSchema = graphData.forms.find(f => f.id === selectedSource)?.field_schema?.properties || {};
+      const targetSchema = graphData.forms.find(f => f.id === form.id)?.field_schema?.properties || {};
+      const sourceType = getFieldSchema(sourceSchema, [field])?.type || 'string';
+      const targetType = getFieldSchema(targetSchema, [selectedTarget])?.type || 'string';
+      const mockValue = MOCK_DATA[field] || 'Sample Value';
+      const transformedValue = String(transformValue(mockValue, sourceType, targetType));
+      setPreviewData({
+        source: mockValue,
+        transformed: transformedValue,
+        target: transformedValue
+      });
+    }
   };
 
   const getAvailableFields = (formId: string): string[] => {
@@ -357,9 +371,9 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
 
   const handleTargetChange = (target: string) => {
     setSelectedTarget(target);
-    setValidationError(null);
     setPreviewData(null);
 
+    // Only validate if we have both source and target
     if (selectedSourceField) {
       const sourceSchema = graphData.forms.find(f => f.id === selectedSource)?.field_schema?.properties || {};
       const targetSchema = graphData.forms.find(f => f.id === form.id)?.field_schema?.properties || {};
@@ -370,8 +384,17 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
         setValidationError(`Incompatible field types: ${sourceType} cannot be mapped to ${targetType}`);
         return;
       }
+    }
 
-      // Update preview with mock data
+    // Only clear error if validation passes
+    setValidationError(null);
+
+    // Update preview if we have both fields
+    if (selectedSourceField) {
+      const sourceSchema = graphData.forms.find(f => f.id === selectedSource)?.field_schema?.properties || {};
+      const targetSchema = graphData.forms.find(f => f.id === form.id)?.field_schema?.properties || {};
+      const sourceType = getFieldSchema(sourceSchema, [selectedSourceField])?.type || 'string';
+      const targetType = getFieldSchema(targetSchema, [target])?.type || 'string';
       const mockValue = MOCK_DATA[selectedSourceField] || 'Sample Value';
       const transformedValue = String(transformValue(mockValue, sourceType, targetType));
       setPreviewData({
@@ -434,15 +457,30 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
   return (
     <div className={styles.mappingEditor} data-testid="mapping-editor">
       <div className={styles.header}>
-        <h2>Edit Mappings for {form.data.name}</h2>
-        <button className={styles.closeButton} onClick={onClose} data-testid="close-button">×</button>
+        <div className={styles.headerContent}>
+          <h2>Edit Mappings for {form.data.name}</h2>
+          <p className={styles.subtitle}>Map fields from source forms to target fields</p>
+        </div>
+        <button 
+          className={styles.closeButton} 
+          onClick={onClose} 
+          data-testid="close-button"
+          aria-label="Close mapping editor"
+        >
+          ×
+        </button>
       </div>
 
       <div className={styles.content}>
         <div className={styles.mappingForm}>
           {/* Template Selection */}
           <div className={styles.templateSection}>
-            <h3>Healthcare Field Templates</h3>
+            <div className={styles.sectionHeader}>
+              <h3>Healthcare Field Templates</h3>
+              <p className={styles.sectionDescription}>
+                Quickly apply predefined field mappings for common healthcare scenarios
+              </p>
+            </div>
             <div className={styles.templateGrid}>
               {Object.entries(HEALTHCARE_TEMPLATES).map(([key, template]) => (
                 <button
@@ -454,208 +492,211 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
                   disabled={!selectedSource}
                   data-testid={`template-${key}`}
                 >
-                  <h4>{template.name}</h4>
-                  <p>{template.fields.length} fields</p>
+                  <div className={styles.templateContent}>
+                    <h4>{template.name}</h4>
+                    <p>{template.fields.length} fields</p>
+                    <ul className={styles.templateFields}>
+                      {template.fields.slice(0, 3).map((field, index) => (
+                        <li key={index}>{field.source} → {field.target}</li>
+                      ))}
+                      {template.fields.length > 3 && (
+                        <li className={styles.moreFields}>+{template.fields.length - 3} more fields</li>
+                      )}
+                    </ul>
+                  </div>
                 </button>
               ))}
             </div>
           </div>
 
-          <div className={styles.formGroup}>
-            <label>Source Form</label>
-            <select 
-              value={selectedSource} 
-              onChange={(e) => handleSourceChange(e.target.value)}
-              data-testid="source-form"
-            >
-              <option value="">Select a form...</option>
-              {getAvailableSources(form.id, []).map((source, index) => (
-                <option key={`source-form-${source.formId}-${index}`} value={source.formId}>
-                  {source.formId}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.fieldSelect}>
-            <label htmlFor="source-field">Source Field:</label>
-            <select
-              id="source-field"
-              value={selectedSourceField}
-              onChange={(e) => handleSourceFieldChange(e.target.value)}
-              data-testid="source-field"
-            >
-              <option value="">Select a source field</option>
-              {sourceFields.map(field => (
-                <option key={field} value={field}>
-                  {field}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {validationError && (
-            <div className={styles.error} data-testid="validation-error">
-              {validationError}
+          <div className={styles.mappingSection}>
+            <div className={styles.sectionHeader}>
+              <h3>Create New Mapping</h3>
+              <p className={styles.sectionDescription}>
+                Select source and target fields to create a new mapping
+              </p>
             </div>
-          )}
 
-          <div className={styles.formGroup}>
-            <label>Target Field</label>
-            <select 
-              value={selectedTarget} 
-              onChange={(e) => handleTargetChange(e.target.value)}
-              data-testid="target-field"
-            >
-              <option value="">Select a field...</option>
-              {Object.entries(graphData.forms.find(f => f.id === form.data.component_id)?.field_schema.properties || {}).map(([fieldId, field], index) => (
-                <option key={`target-field-${fieldId}-${index}`} value={fieldId}>
-                  {field.title || fieldId}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {previewData && (
-            <div className={styles.previewSection} data-testid="preview-section">
-              <h4>Data Preview</h4>
-              <div className={styles.previewItem} data-testid="preview-item">
-                <strong>Source Value:</strong>
-                <pre>{previewData.source}</pre>
-              </div>
-              <div className={styles.previewItem} data-testid="preview-item">
-                <strong>Transformed Value:</strong>
-                <pre>{previewData.transformed}</pre>
-              </div>
-            </div>
-          )}
-
-          {selectedSource && selectedTarget && (
             <div className={styles.formGroup}>
-              <label>Transformation</label>
+              <label htmlFor="source-form">Source Form</label>
               <select 
-                value={selectedTransformation} 
-                onChange={(e) => {
-                  setSelectedTransformation(e.target.value);
-                  updatePreview(selectedSourceField, selectedTarget);
-                }}
-                data-testid="transformation-select"
+                id="source-form"
+                value={selectedSource} 
+                onChange={(e) => handleSourceChange(e.target.value)}
+                data-testid="source-form"
               >
-                <option value="">No transformation</option>
-                {/* {getAvailableTransformations(
-                  getFieldType(selectedSource, selectedSource),
-                  getFieldType(selectedTarget, form.id)
-                ).map(transform => (
-                  <option key={transform} value={transform}>
-                    {transform}
+                <option value="">Select a form...</option>
+                {getAvailableSources(form.id, []).map((source, index) => (
+                  <option key={`source-form-${source.formId}-${index}`} value={source.formId}>
+                    {source.formId}
                   </option>
-                ))} */}
+                ))}
               </select>
             </div>
-          )}
 
-          {selectedTransformation && (
-            <div className={styles.transformationParams}>
-              {selectedTransformation === 'concat' && (
-                <div className={styles.formGroup}>
-                  <label>Separator</label>
-                  <input 
-                    type="text" 
-                    value={transformationParams.separator || ' '}
-                    onChange={(e) => {
-                      setTransformationParams({ ...transformationParams, separator: e.target.value });
-                      updatePreview(selectedSourceField, selectedTarget);
-                    }}
-                    placeholder="Enter separator"
-                    data-testid="separator-input"
-                  />
+            <div className={styles.formGroup}>
+              <label htmlFor="source-field">Source Field</label>
+              <select
+                id="source-field"
+                value={selectedSourceField}
+                onChange={(e) => handleSourceFieldChange(e.target.value)}
+                data-testid="source-field"
+                disabled={!selectedSource}
+              >
+                <option value="">Select a source field</option>
+                {sourceFields.map(field => (
+                  <option key={field} value={field}>
+                    {field}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {validationError && (
+              <div 
+                className={styles.error} 
+                data-testid="validation-error" 
+                role="alert"
+              >
+                <div className={styles.errorIcon}>⚠️</div>
+                <div className={styles.errorContent}>
+                  <strong>Validation Error</strong>
+                  <p>{validationError}</p>
                 </div>
-              )}
-              {selectedTransformation === 'replace' && (
-                <>
-                  <div className={styles.formGroup}>
-                    <label>Search</label>
-                    <input 
-                      type="text" 
-                      value={transformationParams.search || ''}
-                      onChange={(e) => {
-                        setTransformationParams({ ...transformationParams, search: e.target.value });
-                        updatePreview(selectedSourceField, selectedTarget);
-                      }}
-                      placeholder="Text to replace"
-                      data-testid="search-input"
-                    />
+              </div>
+            )}
+
+            <div className={styles.formGroup}>
+              <label htmlFor="target-field">Target Field</label>
+              <select 
+                id="target-field"
+                value={selectedTarget} 
+                onChange={(e) => handleTargetChange(e.target.value)}
+                data-testid="target-field"
+              >
+                <option value="">Select a field...</option>
+                {Object.entries(graphData.forms.find(f => f.id === form.data.component_id)?.field_schema.properties || {}).map(([fieldId, field], index) => (
+                  <option key={`target-field-${fieldId}-${index}`} value={fieldId}>
+                    {field.title || fieldId}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {previewData && (
+              <div className={styles.previewSection} data-testid="preview-section">
+                <div className={styles.sectionHeader}>
+                  <h4>Data Preview</h4>
+                  <p className={styles.sectionDescription}>
+                    Preview how the data will be transformed
+                  </p>
+                </div>
+                <div className={styles.previewContent}>
+                  <div className={styles.previewItem} data-testid="preview-item">
+                    <strong>Source Value</strong>
+                    <pre>{previewData.source}</pre>
                   </div>
-                  <div className={styles.formGroup}>
-                    <label>Replace With</label>
-                    <input 
-                      type="text" 
-                      value={transformationParams.replace || ''}
-                      onChange={(e) => {
-                        setTransformationParams({ ...transformationParams, replace: e.target.value });
-                        updatePreview(selectedSourceField, selectedTarget);
-                      }}
-                      placeholder="Replacement text"
-                      data-testid="replace-input"
-                    />
+                  <div className={styles.previewItem} data-testid="preview-item">
+                    <strong>Transformed Value</strong>
+                    <pre>{previewData.transformed}</pre>
                   </div>
-                </>
-              )}
+                </div>
+              </div>
+            )}
+
+            {selectedSource && selectedTarget && (
+              <div className={styles.formGroup}>
+                <label htmlFor="transformation">Transformation</label>
+                <select 
+                  id="transformation"
+                  value={selectedTransformation} 
+                  onChange={(e) => {
+                    setSelectedTransformation(e.target.value);
+                    updatePreview(selectedSourceField, selectedTarget);
+                  }}
+                  data-testid="transformation-select"
+                >
+                  <option value="">No transformation</option>
+                </select>
+              </div>
+            )}
+
+            <div className={styles.actions}>
+              <button 
+                className={styles.saveButton}
+                disabled={!!validationError || !selectedSource || !selectedTarget || isSaving}
+                onClick={handleAddMapping}
+                data-testid="save-button"
+              >
+                {isSaving ? (
+                  <span className={styles.loadingSpinner}>⌛</span>
+                ) : (
+                  'Save Mapping'
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Mapping List Section */}
+          <div className={styles.mappingList} data-testid="mapping-list">
+            <div className={styles.sectionHeader}>
+              <h3>Current Mappings</h3>
+              <p className={styles.sectionDescription}>
+                {formMappingsList.length} mapping{formMappingsList.length !== 1 ? 's' : ''} defined
+              </p>
+            </div>
+            
+            {isLoading ? (
+              <div className={styles.loading}>
+                <span className={styles.loadingSpinner}>⌛</span>
+                Loading mappings...
+              </div>
+            ) : formMappingsList.length === 0 ? (
+              <div className={styles.noMappings}>
+                <p>No mappings defined yet</p>
+                <p className={styles.hint}>Select source and target fields above to create your first mapping</p>
+              </div>
+            ) : (
+              formMappingsList.map((mapping) => (
+                <div 
+                  key={mapping.id} 
+                  className={styles.mappingItem}
+                  data-testid="mapping-item"
+                >
+                  <div className={styles.mappingInfo}>
+                    <div className={styles.mappingFields}>
+                      <span className={styles.targetField}>{mapping.targetFieldId}</span>
+                      <span className={styles.mappingArrow}>→</span>
+                      <span className={styles.sourceField}>
+                        {mapping.source.label || mapping.source.fieldId}
+                      </span>
+                    </div>
+                    <div className={styles.mappingType}>
+                      {getFieldType(String(mapping.source.fieldId), String(mapping.source.formId))} → {getFieldType(String(mapping.targetFieldId), String(form.id))}
+                    </div>
+                  </div>
+                  <button
+                    className={styles.removeMapping}
+                    onClick={() => handleRemoveMapping(mapping.id)}
+                    data-testid="remove-mapping"
+                    disabled={isLoading}
+                    aria-label={`Remove mapping for ${mapping.targetFieldId}`}
+                  >
+                    {isLoading ? 'Removing...' : 'Remove'}
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Mapping Status */}
+          {mappingStatus && (
+            <div className={styles.mappingStatus} data-testid="mapping-status">
+              <div className={styles.statusIcon}>✓</div>
+              <div className={styles.statusMessage}>{mappingStatus}</div>
             </div>
           )}
-
-          <div className={styles.actions}>
-            <button 
-              className={styles.saveButton}
-              disabled={!!validationError || !selectedSource || !selectedTarget || isSaving}
-              onClick={handleAddMapping}
-              data-testid="save-button"
-            >
-              {isSaving ? 'Saving...' : 'Save Mapping'}
-            </button>
-          </div>
         </div>
-
-        {/* Mapping List Section */}
-        <div className={styles.mappingList} data-testid="mapping-list">
-          <h3>Current Mappings</h3>
-          {isLoading ? (
-            <div className={styles.loading}>Loading mappings...</div>
-          ) : formMappingsList.length === 0 ? (
-            <div className={styles.noMappings}>No mappings defined yet</div>
-          ) : (
-            formMappingsList.map((mapping) => (
-              <div 
-                key={mapping.id} 
-                className={styles.mappingItem}
-                data-testid="mapping-item"
-              >
-                <div className={styles.mappingInfo}>
-                  <span className={styles.targetField}>{mapping.targetFieldId}</span>
-                  <span className={styles.mappingArrow}>→</span>
-                  <span className={styles.sourceField}>
-                    {mapping.source.label || mapping.source.fieldId}
-                  </span>
-                </div>
-                <button
-                  className={styles.removeMapping}
-                  onClick={() => handleRemoveMapping(mapping.id)}
-                  data-testid="remove-mapping"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Removing...' : 'Remove'}
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Mapping Status */}
-        {mappingStatus && (
-          <div className={styles.mappingStatus} data-testid="mapping-status">
-            {mappingStatus}
-          </div>
-        )}
       </div>
 
       <SourceSelectorModal

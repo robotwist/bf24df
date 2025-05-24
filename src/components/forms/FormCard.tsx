@@ -3,7 +3,6 @@ import { FormNode, GraphData } from '../../types/graph';
 import { FormField, FormSchema } from '../../types/forms';
 import { MappingEditor } from '../mappings/MappingEditor';
 import { SourceSelectorModal } from '../modals/SourceSelectorModal';
-import { getFieldSchema } from '../../lib/utils/validation';
 
 interface FormCardProps {
   form: FormNode;
