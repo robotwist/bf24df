@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState /*, useEffect */ } from 'react';
 import { FormNode, GraphData } from '../../types/graph';
 import { FieldMapping, MappingSource } from '../../types/mappings';
 import { useMappings } from '../../hooks/useMappings';
 import { SourceSelectorModal } from '../modals/SourceSelectorModal';
-import { MappingStatus } from './MappingStatus';
+// import { MappingStatus } from './MappingStatus';
 import { getFieldSchema } from '../../lib/utils/validation';
 import styles from '../../styles/MappingEditor.module.css';
 
@@ -29,26 +29,28 @@ const FIELD_TYPES: Record<string, FieldType> = {
 };
 
 // Mock data for preview
-const MOCK_DATA: Record<string, any> = {
+const MOCK_DATA: Record<string, string> = {
   string_field: 'Sample Text',
-  number_field: 42,
-  boolean_field: true,
+  number_field: '42',
+  boolean_field: 'true',
   date_field: '2024-03-20',
   text_field: 'Long form text content',
-  integer_field: 100,
-  datetime_field: '2024-03-20T15:30:00Z'
+  integer_field: '100',
+  datetime_field: '2024-03-20T15:30:00Z',
+  phone_field: '1234567890',
+  email_field: 'test@example.com'
 };
 
-const transformValue = (value: any, sourceType: string, targetType: string): any => {
+const transformValue = (value: string, sourceType: string, targetType: string): string => {
   if (sourceType === targetType) return value;
 
   try {
     switch (targetType) {
       case 'number':
       case 'integer':
-        return Number(value);
+        return String(Number(value));
       case 'boolean':
-        return Boolean(value);
+        return String(Boolean(value));
       case 'date':
         return new Date(value).toISOString().split('T')[0];
       case 'datetime':
@@ -94,98 +96,39 @@ const HEALTHCARE_TEMPLATES = {
   }
 };
 
-// Complex transformation functions
-const TRANSFORMATIONS = {
-  // String transformations
-  uppercase: (value: string) => value.toUpperCase(),
-  lowercase: (value: string) => value.toLowerCase(),
-  capitalize: (value: string) => value.charAt(0).toUpperCase() + value.slice(1).toLowerCase(),
-  trim: (value: string) => value.trim(),
-  
-  // Number transformations
-  round: (value: number) => Math.round(value),
-  floor: (value: number) => Math.floor(value),
-  ceil: (value: number) => Math.ceil(value),
-  
-  // Date transformations
-  formatDate: (value: string) => new Date(value).toLocaleDateString(),
-  formatDateTime: (value: string) => new Date(value).toLocaleString(),
-  
-  // Custom transformations
-  concat: (value: string, separator: string = ' ') => value.split(separator).join(''),
-  split: (value: string, separator: string = ' ') => value.split(separator),
-  replace: (value: string, search: string, replace: string) => value.replace(search, replace),
-  
-  // Healthcare specific
-  formatPhone: (value: string) => {
-    const cleaned = value.replace(/\D/g, '');
-    return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
-  },
-  formatSSN: (value: string) => {
-    const cleaned = value.replace(/\D/g, '');
-    return cleaned.replace(/(\d{3})(\d{2})(\d{4})/, '$1-$2-$3');
-  }
-};
+// Commented out unused constants and functions
+// const HEALTHCARE_VALIDATIONS: Record<string, ValidationRule> = { ... };
+// const FIELD_VALIDATIONS: Record<string, string[]> = { ... };
+// const applyTransformation = (value: string, transform: string, params: Record<string, string>): string => { ... };
+// const TRANSFORMATIONS: Record<string, TransformFunction> = { ... };
 
-// Healthcare field validation rules
-const HEALTHCARE_VALIDATIONS = {
-  // Patient identifiers
-  patient_id: {
-    pattern: /^[A-Z0-9]{8}$/,
-    message: 'Patient ID must be 8 alphanumeric characters'
-  },
-  ssn: {
-    pattern: /^\d{3}-\d{2}-\d{4}$/,
-    message: 'SSN must be in format XXX-XX-XXXX'
-  },
-  mrn: {
-    pattern: /^[A-Z0-9]{10}$/,
-    message: 'Medical Record Number must be 10 alphanumeric characters'
-  },
-  
-  // Contact information
-  phone: {
-    pattern: /^\(\d{3}\) \d{3}-\d{4}$/,
-    message: 'Phone must be in format (XXX) XXX-XXXX'
-  },
-  email: {
-    pattern: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-    message: 'Invalid email format'
-  },
-  
-  // Medical information
-  date_of_birth: {
-    validate: (value: string) => {
-      const date = new Date(value);
-      const now = new Date();
-      return date < now && date > new Date(1900, 0, 1);
-    },
-    message: 'Date of birth must be between 1900 and today'
-  },
-  height: {
-    pattern: /^\d{1,3}(\.\d{1,2})?$/,
-    message: 'Height must be a number between 0 and 999.99'
-  },
-  weight: {
-    pattern: /^\d{1,3}(\.\d{1,2})?$/,
-    message: 'Weight must be a number between 0 and 999.99'
-  },
-  blood_type: {
-    pattern: /^(A|B|AB|O)[+-]$/,
-    message: 'Blood type must be A+, A-, B+, B-, AB+, AB-, O+, or O-'
-  }
-};
+// const getAvailableTransformations = (sourceType: string, targetType: string): string[] => {
+//   const transformations: string[] = [];
+//   if (sourceType === 'string' || targetType === 'string') {
+//     transformations.push('uppercase', 'lowercase', 'capitalize', 'trim');
+//   }
+//   if (sourceType === 'number' || targetType === 'number') {
+//     transformations.push('round', 'floor', 'ceil');
+//   }
+//   if (sourceType === 'date' || targetType === 'date' || 
+//       sourceType === 'datetime' || targetType === 'datetime') {
+//     transformations.push('formatDate', 'formatDateTime');
+//   }
+//   if (sourceType === 'string') {
+//     transformations.push('format_phone', 'format_ssn');
+//   }
+//   return transformations;
+// };
 
-// Field type to validation mapping
-const FIELD_VALIDATIONS: Record<string, string[]> = {
-  patient_id: ['patient_id', 'mrn'],
-  ssn: ['ssn'],
-  phone: ['phone'],
-  email: ['email'],
-  date_of_birth: ['date_of_birth'],
-  height: ['height'],
-  weight: ['weight'],
-  blood_type: ['blood_type']
+const areTypesCompatible = (sourceType: string, targetType: string): boolean => {
+  const sourceTypeInfo = FIELD_TYPES[sourceType];
+  const targetTypeInfo = FIELD_TYPES[targetType];
+  
+  if (!sourceTypeInfo || !targetTypeInfo) {
+    return false;
+  }
+  
+  return sourceTypeInfo.compatibleTypes.includes(targetType);
 };
 
 export const MappingEditor: React.FC<MappingEditorProps> = ({ 
@@ -195,31 +138,66 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedField, setSelectedField] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // const [error, setError] = useState<string | null>(null);
   const [selectedSource, setSelectedSource] = useState<string>('');
+  const [selectedSourceField, setSelectedSourceField] = useState<string>('');
   const [selectedTarget, setSelectedTarget] = useState<string>('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  // const [isTemplateApplying, setIsTemplateApplying] = useState(false);
   const [previewData, setPreviewData] = useState<{
-    raw: any;
-    transformed: any;
+    source: string;
+    transformed: string;
+    target: string;
   } | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [selectedTransformation, setSelectedTransformation] = useState<string>('');
   const [transformationParams, setTransformationParams] = useState<Record<string, string>>({});
-  const [validationRules, setValidationRules] = useState<string[]>([]);
+  // const [validationRules, setValidationRules] = useState<string[]>([]);
+  const [mappingStatus, setMappingStatus] = useState<string | null>(null);
+  const [sourceFields, setSourceFields] = useState<string[]>([]);
   
   const {
     formMappings,
     getAvailableSources,
     addMapping,
-    removeMapping,
-    updateMapping
+    removeMapping
+    // updateMapping
   } = useMappings(graphData);
 
-  const handleAddMapping = (fieldId: string) => {
-    setSelectedField(fieldId);
-    setIsModalOpen(true);
-    setError(null);
+  const handleAddMapping = async () => {
+    try {
+      setIsSaving(true);
+      setValidationError(null);
+
+      if (selectedSource && selectedTarget) {
+        const source: MappingSource = {
+          type: 'direct',
+          formId: selectedSource,
+          fieldId: selectedSource,
+          label: `${selectedSource} - ${selectedSource}`
+        };
+
+        const newMapping: FieldMapping = {
+          id: `${form.id}-${selectedTarget}-${Date.now()}`,
+          targetFormId: form.id,
+          targetFieldId: selectedTarget,
+          source
+        };
+
+        await addMapping(form.id, newMapping);
+        setSelectedSource('');
+        setSelectedTarget('');
+        setSelectedTransformation('');
+        setTransformationParams({});
+        setMappingStatus('Mapping saved');
+      }
+    } catch (err) {
+      setValidationError(err instanceof Error ? err.message : 'Failed to add mapping');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSourceSelect = (source: MappingSource) => {
@@ -254,7 +232,7 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
         setIsModalOpen(false);
         setSelectedField(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to create mapping');
+        setValidationError(err instanceof Error ? err.message : 'Failed to create mapping');
       }
     }
   };
@@ -268,158 +246,196 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
     return form.data.input_mapping[fieldName]?.type || 'string';
   };
 
-  const validateFieldTypes = (sourceField: string, targetField: string) => {
-    const sourceType = getFieldType(sourceField, selectedSource);
-    const targetType = getFieldType(targetField, form.id);
-    
-    const sourceTypeInfo = FIELD_TYPES[sourceType];
-    const targetTypeInfo = FIELD_TYPES[targetType];
-
-    if (!sourceTypeInfo || !targetTypeInfo) {
+  const validateField = (field: string, value: string) => {
+    const fieldType = getFieldType(field, form.id);
+    if (!fieldType) {
       setValidationError('Unknown field type');
       return false;
     }
 
-    if (!sourceTypeInfo.compatibleTypes.includes(targetType)) {
+    // Check field type compatibility
+    const sourceType = getFieldType(selectedSource || '', selectedSource || '');
+    const targetType = getFieldType(selectedTarget || '', form.id);
+    
+    if (sourceType && targetType && !areTypesCompatible(sourceType, targetType)) {
       setValidationError(`Incompatible field types: ${sourceType} cannot be mapped to ${targetType}`);
       return false;
     }
 
+    // Validate based on field type
+    if (fieldType === 'phone') {
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+      if (!phoneRegex.test(value)) {
+        setValidationError('Invalid phone number format');
+        return false;
+      }
+    } else if (fieldType === 'ssn') {
+      const ssnRegex = /^\d{3}-?\d{2}-?\d{4}$/;
+      if (!ssnRegex.test(value)) {
+        setValidationError('Invalid SSN format');
+        return false;
+      }
+    }
+
     setValidationError(null);
     return true;
   };
 
-  const getAvailableTransformations = (sourceType: string, targetType: string): string[] => {
-    const transformations: string[] = [];
-    
-    if (sourceType === 'string' || targetType === 'string') {
-      transformations.push('uppercase', 'lowercase', 'capitalize', 'trim');
+  const updatePreview = (sourceValue: string, targetField: string) => {
+    if (!sourceValue || !targetField) {
+      setPreviewData(null);
+      return;
     }
-    
-    if (sourceType === 'number' || targetType === 'number') {
-      transformations.push('round', 'floor', 'ceil');
-    }
-    
-    if (sourceType === 'date' || targetType === 'date' || 
-        sourceType === 'datetime' || targetType === 'datetime') {
-      transformations.push('formatDate', 'formatDateTime');
-    }
-    
-    // Add healthcare specific transformations
-    if (sourceType === 'string') {
-      transformations.push('formatPhone', 'formatSSN');
-    }
-    
-    return transformations;
-  };
 
-  const applyTransformation = (value: any, transformation: string, params: Record<string, string> = {}): any => {
-    if (!transformation) return value;
-    
-    const transformFn = TRANSFORMATIONS[transformation as keyof typeof TRANSFORMATIONS];
-    if (!transformFn) return value;
-    
     try {
-      return transformFn(value, ...Object.values(params));
-    } catch (error) {
-      console.error('Error applying transformation:', error);
-      return value;
+      const transformedValue = sourceValue;
+
+      if (selectedTransformation) {
+        // const transform = TRANSFORMATIONS[selectedTransformation];
+        // if (transform) {
+        //   transformedValue = transform(sourceValue);
+        // }
+      }
+
+      // Validate the transformed value
+      validateField(targetField, transformedValue.toString());
+
+      setPreviewData({
+        source: sourceValue,
+        transformed: transformedValue,
+        target: targetField
+      });
+    } catch (err) {
+      setValidationError(err instanceof Error ? err.message : 'Failed to generate preview');
+      setPreviewData(null);
     }
   };
 
-  const validateField = (value: any, fieldName: string): boolean => {
-    const rules = FIELD_VALIDATIONS[fieldName] || [];
-    
-    for (const rule of rules) {
-      const validation = HEALTHCARE_VALIDATIONS[rule as keyof typeof HEALTHCARE_VALIDATIONS];
-      if (!validation) continue;
-
-      if (validation.pattern && !validation.pattern.test(value)) {
-        setValidationError(validation.message);
-        return false;
-      }
-
-      if (validation.validate && !validation.validate(value)) {
-        setValidationError(validation.message);
-        return false;
-      }
-    }
-
+  const handleSourceChange = (source: string) => {
+    setSelectedSource(source);
+    setSelectedSourceField('');
     setValidationError(null);
-    return true;
+    setPreviewData(null);
+
+    // Update source fields based on selected source
+    const fields = getAvailableFields(source);
+    setSourceFields(fields);
   };
 
-  const updatePreview = (sourceField: string, targetField: string) => {
-    const sourceType = getFieldType(sourceField, selectedSource);
-    const targetType = getFieldType(targetField, form.id);
-    
-    const rawValue = MOCK_DATA[sourceField] || 'No preview available';
-    const transformedValue = applyTransformation(
-      transformValue(rawValue, sourceType, targetType),
-      selectedTransformation,
-      transformationParams
-    );
+  const handleSourceFieldChange = (field: string) => {
+    setSelectedSourceField(field);
+    setValidationError(null);
+    setPreviewData(null);
 
-    // Validate the transformed value
-    validateField(transformedValue, targetField);
+    const sourceSchema = graphData.forms.find(f => f.id === selectedSource)?.field_schema?.properties || {};
+    const targetSchema = graphData.forms.find(f => f.id === form.id)?.field_schema?.properties || {};
+    const sourceType = getFieldSchema(sourceSchema, [field])?.type || 'string';
+    const targetType = getFieldSchema(targetSchema, [selectedTarget])?.type || 'string';
 
+    if (!areTypesCompatible(sourceType, targetType)) {
+      setValidationError(`Incompatible field types: ${sourceType} cannot be mapped to ${targetType}`);
+      return;
+    }
+
+    // Update preview with mock data
+    const mockValue = MOCK_DATA[field] || 'Sample Value';
+    const transformedValue = String(transformValue(mockValue, sourceType, targetType));
     setPreviewData({
-      raw: rawValue,
-      transformed: transformedValue
+      source: mockValue,
+      transformed: transformedValue,
+      target: transformedValue
     });
   };
 
-  const handleSourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedSource(e.target.value);
+  const getAvailableFields = (formId: string): string[] => {
+    if (!formId) return [];
+    const sources: MappingSource[] = getAvailableSources(form.id, []);
+    return sources
+      .filter((source) => source.formId === formId)
+      .map((source) => source.fieldId);
+  };
+
+  const handleTargetChange = (target: string) => {
+    setSelectedTarget(target);
     setValidationError(null);
     setPreviewData(null);
-  };
 
-  const handleTargetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const targetField = e.target.value;
-    setSelectedTarget(targetField);
-    
-    // Set validation rules for the selected field
-    const rules = FIELD_VALIDATIONS[targetField] || [];
-    setValidationRules(rules);
-    
-    if (selectedSource) {
-      validateFieldTypes(selectedSource, targetField);
-      updatePreview(selectedSource, targetField);
-    }
-  };
+    if (selectedSourceField) {
+      const sourceSchema = graphData.forms.find(f => f.id === selectedSource)?.field_schema?.properties || {};
+      const targetSchema = graphData.forms.find(f => f.id === form.id)?.field_schema?.properties || {};
+      const sourceType = getFieldSchema(sourceSchema, [selectedSourceField])?.type || 'string';
+      const targetType = getFieldSchema(targetSchema, [target])?.type || 'string';
 
-  const handleTemplateSelect = (templateKey: string) => {
-    setSelectedTemplate(templateKey);
-    const template = HEALTHCARE_TEMPLATES[templateKey as keyof typeof HEALTHCARE_TEMPLATES];
-    
-    if (template) {
-      // Apply all field mappings from the template
-      template.fields.forEach(field => {
-        const source: MappingSource = {
-          type: 'form',
-          formId: selectedSource,
-          fieldId: field.source,
-          label: `${field.source} (${template.name})`
-        };
+      if (!areTypesCompatible(sourceType, targetType)) {
+        setValidationError(`Incompatible field types: ${sourceType} cannot be mapped to ${targetType}`);
+        return;
+      }
 
-        const newMapping: FieldMapping = {
-          id: `${form.id}-${field.target}-${Date.now()}`,
-          targetFormId: form.id,
-          targetFieldId: field.target,
-          source
-        };
-
-        addMapping(form.id, newMapping);
+      // Update preview with mock data
+      const mockValue = MOCK_DATA[selectedSourceField] || 'Sample Value';
+      const transformedValue = String(transformValue(mockValue, sourceType, targetType));
+      setPreviewData({
+        source: mockValue,
+        transformed: transformedValue,
+        target: transformedValue
       });
     }
   };
 
+  const handleTemplateSelect = async (templateKey: string) => {
+    setIsSaving(true);
+    setValidationError(null);
+    try {
+      const template = HEALTHCARE_TEMPLATES[templateKey as keyof typeof HEALTHCARE_TEMPLATES];
+      
+      if (template) {
+        // Apply all field mappings from the template
+        const mappingPromises = template.fields.map(async (field) => {
+          const source: MappingSource = {
+            type: 'direct',
+            formId: selectedSource,
+            fieldId: field.source,
+            label: `${field.source} (${template.name})`
+          };
+
+          const newMapping: FieldMapping = {
+            id: `${form.id}-${field.target}-${Date.now()}`,
+            targetFormId: form.id,
+            targetFieldId: field.target,
+            source
+          };
+
+          await addMapping(form.id, newMapping);
+        });
+
+        // Wait for all mappings to be created
+        await Promise.all(mappingPromises);
+        setSelectedTemplate(templateKey);
+      }
+    } catch (err) {
+      setValidationError(err instanceof Error ? err.message : 'Failed to apply template');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemoveMapping = async (mappingId: string) => {
+    try {
+      setIsLoading(true);
+      await removeMapping(form.id, mappingId);
+      setMappingStatus('Mapping removed');
+    } catch (err) {
+      setValidationError(err instanceof Error ? err.message : 'Failed to remove mapping');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className={styles.mappingEditor}>
+    <div className={styles.mappingEditor} data-testid="mapping-editor">
       <div className={styles.header}>
         <h2>Edit Mappings for {form.data.name}</h2>
-        <button className={styles.closeButton} onClick={onClose}>×</button>
+        <button className={styles.closeButton} onClick={onClose} data-testid="close-button">×</button>
       </div>
 
       <div className={styles.content}>
@@ -436,6 +452,7 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
                   }`}
                   onClick={() => handleTemplateSelect(key)}
                   disabled={!selectedSource}
+                  data-testid={`template-${key}`}
                 >
                   <h4>{template.name}</h4>
                   <p>{template.fields.length} fields</p>
@@ -448,68 +465,68 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
             <label>Source Form</label>
             <select 
               value={selectedSource} 
-              onChange={handleSourceChange}
+              onChange={(e) => handleSourceChange(e.target.value)}
               data-testid="source-form"
             >
               <option value="">Select a form...</option>
-              {getAvailableSources(form.id, []).map(source => (
-                <option key={source.formId} value={source.formId}>
+              {getAvailableSources(form.id, []).map((source, index) => (
+                <option key={`source-form-${source.formId}-${index}`} value={source.formId}>
                   {source.formId}
                 </option>
               ))}
             </select>
           </div>
 
-          {selectedSource && (
-            <div className={styles.formGroup}>
-              <label>Source Field</label>
-              <select 
-                value={selectedTarget} 
-                onChange={handleTargetChange}
-                data-testid="source-field"
-              >
-                <option value="">Select a field...</option>
-                {getAvailableSources(form.id, [selectedTarget]).map(field => (
-                  <option key={field} value={field}>
-                    {field}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {previewData && (
-            <div className={styles.previewSection}>
-              <h3>Data Preview</h3>
-              <div className={styles.previewContent}>
-                <div className={styles.previewItem}>
-                  <label>Raw Value:</label>
-                  <pre>{JSON.stringify(previewData.raw, null, 2)}</pre>
-                </div>
-                <div className={styles.previewItem}>
-                  <label>Transformed Value:</label>
-                  <pre>{JSON.stringify(previewData.transformed, null, 2)}</pre>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {validationRules.length > 0 && (
-            <div className={styles.validationRules}>
-              <h4>Validation Rules</h4>
-              <ul>
-                {validationRules.map(rule => (
-                  <li key={rule}>
-                    {HEALTHCARE_VALIDATIONS[rule as keyof typeof HEALTHCARE_VALIDATIONS]?.message}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <div className={styles.fieldSelect}>
+            <label htmlFor="source-field">Source Field:</label>
+            <select
+              id="source-field"
+              value={selectedSourceField}
+              onChange={(e) => handleSourceFieldChange(e.target.value)}
+              data-testid="source-field"
+            >
+              <option value="">Select a source field</option>
+              {sourceFields.map(field => (
+                <option key={field} value={field}>
+                  {field}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {validationError && (
-            <div className={styles.validationError} data-testid="validation-error">
+            <div className={styles.error} data-testid="validation-error">
               {validationError}
+            </div>
+          )}
+
+          <div className={styles.formGroup}>
+            <label>Target Field</label>
+            <select 
+              value={selectedTarget} 
+              onChange={(e) => handleTargetChange(e.target.value)}
+              data-testid="target-field"
+            >
+              <option value="">Select a field...</option>
+              {Object.entries(graphData.forms.find(f => f.id === form.data.component_id)?.field_schema.properties || {}).map(([fieldId, field], index) => (
+                <option key={`target-field-${fieldId}-${index}`} value={fieldId}>
+                  {field.title || fieldId}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {previewData && (
+            <div className={styles.previewSection} data-testid="preview-section">
+              <h4>Data Preview</h4>
+              <div className={styles.previewItem} data-testid="preview-item">
+                <strong>Source Value:</strong>
+                <pre>{previewData.source}</pre>
+              </div>
+              <div className={styles.previewItem} data-testid="preview-item">
+                <strong>Transformed Value:</strong>
+                <pre>{previewData.transformed}</pre>
+              </div>
             </div>
           )}
 
@@ -520,19 +537,19 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
                 value={selectedTransformation} 
                 onChange={(e) => {
                   setSelectedTransformation(e.target.value);
-                  updatePreview(selectedSource, selectedTarget);
+                  updatePreview(selectedSourceField, selectedTarget);
                 }}
                 data-testid="transformation-select"
               >
                 <option value="">No transformation</option>
-                {getAvailableTransformations(
+                {/* {getAvailableTransformations(
                   getFieldType(selectedSource, selectedSource),
                   getFieldType(selectedTarget, form.id)
                 ).map(transform => (
                   <option key={transform} value={transform}>
                     {transform}
                   </option>
-                ))}
+                ))} */}
               </select>
             </div>
           )}
@@ -547,9 +564,10 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
                     value={transformationParams.separator || ' '}
                     onChange={(e) => {
                       setTransformationParams({ ...transformationParams, separator: e.target.value });
-                      updatePreview(selectedSource, selectedTarget);
+                      updatePreview(selectedSourceField, selectedTarget);
                     }}
                     placeholder="Enter separator"
+                    data-testid="separator-input"
                   />
                 </div>
               )}
@@ -562,9 +580,10 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
                       value={transformationParams.search || ''}
                       onChange={(e) => {
                         setTransformationParams({ ...transformationParams, search: e.target.value });
-                        updatePreview(selectedSource, selectedTarget);
+                        updatePreview(selectedSourceField, selectedTarget);
                       }}
                       placeholder="Text to replace"
+                      data-testid="search-input"
                     />
                   </div>
                   <div className={styles.formGroup}>
@@ -574,9 +593,10 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
                       value={transformationParams.replace || ''}
                       onChange={(e) => {
                         setTransformationParams({ ...transformationParams, replace: e.target.value });
-                        updatePreview(selectedSource, selectedTarget);
+                        updatePreview(selectedSourceField, selectedTarget);
                       }}
                       placeholder="Replacement text"
+                      data-testid="replace-input"
                     />
                   </div>
                 </>
@@ -587,17 +607,55 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
           <div className={styles.actions}>
             <button 
               className={styles.saveButton}
-              disabled={!!validationError || !selectedSource || !selectedTarget}
-              onClick={() => {
-                if (selectedSource && selectedTarget) {
-                  handleAddMapping(selectedTarget);
-                }
-              }}
+              disabled={!!validationError || !selectedSource || !selectedTarget || isSaving}
+              onClick={handleAddMapping}
+              data-testid="save-button"
             >
-              Save Mapping
+              {isSaving ? 'Saving...' : 'Save Mapping'}
             </button>
           </div>
         </div>
+
+        {/* Mapping List Section */}
+        <div className={styles.mappingList} data-testid="mapping-list">
+          <h3>Current Mappings</h3>
+          {isLoading ? (
+            <div className={styles.loading}>Loading mappings...</div>
+          ) : formMappingsList.length === 0 ? (
+            <div className={styles.noMappings}>No mappings defined yet</div>
+          ) : (
+            formMappingsList.map((mapping) => (
+              <div 
+                key={mapping.id} 
+                className={styles.mappingItem}
+                data-testid="mapping-item"
+              >
+                <div className={styles.mappingInfo}>
+                  <span className={styles.targetField}>{mapping.targetFieldId}</span>
+                  <span className={styles.mappingArrow}>→</span>
+                  <span className={styles.sourceField}>
+                    {mapping.source.label || mapping.source.fieldId}
+                  </span>
+                </div>
+                <button
+                  className={styles.removeMapping}
+                  onClick={() => handleRemoveMapping(mapping.id)}
+                  data-testid="remove-mapping"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Removing...' : 'Remove'}
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Mapping Status */}
+        {mappingStatus && (
+          <div className={styles.mappingStatus} data-testid="mapping-status">
+            {mappingStatus}
+          </div>
+        )}
       </div>
 
       <SourceSelectorModal
@@ -605,7 +663,7 @@ export const MappingEditor: React.FC<MappingEditorProps> = ({
         onClose={() => {
           setIsModalOpen(false);
           setSelectedField(null);
-          setError(null);
+          setValidationError(null);
         }}
         onSelect={handleSourceSelect}
         sources={availableSources}
