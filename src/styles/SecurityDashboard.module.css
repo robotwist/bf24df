@@ -1,0 +1,301 @@
+.dashboard {
+  padding: 24px;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.timeframeSelector {
+  display: flex;
+  gap: 8px;
+  background-color: white;
+  padding: 4px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.timeframeSelector button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.timeframeSelector button:hover {
+  color: #1e293b;
+  background-color: #f1f5f9;
+}
+
+.timeframeSelector button.active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.section {
+  background-color: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 24px 0;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.metricCard {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.metricCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.metricTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  margin: 0 0 12px 0;
+}
+
+.metricValue {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.trend {
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trend.positive {
+  color: #10b981;
+}
+
+.trend.negative {
+  color: #ef4444;
+}
+
+.violations {
+  background-color: #fef2f2;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.violations h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ef4444;
+  margin: 0 0 12px 0;
+}
+
+.violations ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.violations li {
+  color: #991b1b;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.roleDistribution {
+  margin-top: 24px;
+}
+
+.roleDistribution h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+}
+
+.roleChart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.roleBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.roleLabel {
+  flex: 1;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.roleCount {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  background-color: #f1f5f9;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+.eventType {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 6px;
+}
+
+.eventTypeLabel {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.eventTypeCount {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.recentEvents {
+  margin-top: 24px;
+}
+
+.recentEvents h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+}
+
+.auditEvents {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auditEvent {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.eventHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.eventAction {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.eventTime {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.eventDetails {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.eventDetails > div {
+  margin-bottom: 4px;
+}
+
+.noData {
+  text-align: center;
+  padding: 24px;
+  color: #64748b;
+  font-size: 14px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  font-size: 16px;
+  color: #64748b;
+}
+
+.error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  font-size: 16px;
+  color: #ef4444;
+  background-color: #fef2f2;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .metricCard {
+    padding: 16px;
+  }
+
+  .metricValue {
+    font-size: 20px;
+  }
+} 
