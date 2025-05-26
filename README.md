@@ -1,29 +1,70 @@
-# Form Field Mapping Editor
+# Healthcare Integration Platform
 
-A React-based form field mapping editor that allows users to create and manage field mappings between different forms. The editor supports field type validation, data transformations, and undo/redo functionality.
+A modern healthcare integration platform that supports FHIR and HL7 standards, with workflow automation capabilities.
 
 ## Features
 
-- 🔄 Field mapping between forms
-- ✅ Type validation and compatibility checking
-- 🔧 Data transformations (uppercase, lowercase, date formatting, etc.)
-- ↩️ Undo/redo functionality
-- 💾 Automatic persistence of mappings
-- 🎯 Field type validation
-- 📱 Responsive design
-- ♿ Accessibility support
+- 🔄 FHIR/HL7 Integration
+  - Full FHIR resource support
+  - HL7 message processing
+  - Real-time data synchronization
+  - Custom resource mapping
 
-## Prerequisites
+- 🤖 Workflow Automation
+  - Visual workflow editor
+  - Custom workflow templates
+  - Event-driven automation
+  - Integration with external systems
 
-- Node.js 16.x or later
-- npm 7.x or later
+- 📊 Analytics & Monitoring
+  - Real-time dashboards
+  - Performance metrics
+  - Error tracking
+  - Audit logs
 
-## Installation
+- 🔒 Security
+  - OAuth2 authentication
+  - Role-based access control
+  - Data encryption
+  - Audit trails
+
+## Tech Stack
+
+- **Frontend**
+  - React 18
+  - TypeScript
+  - Vite
+  - TailwindCSS
+  - React Query
+
+- **Backend**
+  - Node.js
+  - Express
+  - TypeScript
+  - MongoDB
+  - Redis
+
+- **Testing**
+  - Jest
+  - React Testing Library
+  - Playwright
+  - Cypress
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18.x or later
+- MongoDB 6.x or later
+- Redis 7.x or later
+- npm 9.x or later
+
+### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/form-field-mapping-editor.git
-cd form-field-mapping-editor
+git clone https://github.com/yourusername/healthcare-integration.git
+cd healthcare-integration
 ```
 
 2. Install dependencies:
@@ -31,166 +72,63 @@ cd form-field-mapping-editor
 npm install
 ```
 
-3. Start the development server:
+3. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+4. Start the development server:
 ```bash
 npm run dev
-```
-
-## Usage
-
-### Basic Usage
-
-```tsx
-import { MappingEditor } from './components/mappings/MappingEditor';
-
-function App() {
-  const form = {
-    id: 'form-1',
-    data: {
-      component_id: 'form-component-1',
-      name: 'Target Form'
-    }
-  };
-
-  const graphData = {
-    nodes: [
-      {
-        id: 'form-1',
-        data: {
-          component_id: 'form-component-1',
-          name: 'Target Form',
-          prerequisites: ['form-2']
-        }
-      },
-      {
-        id: 'form-2',
-        data: {
-          component_id: 'form-component-2',
-          name: 'Source Form'
-        }
-      }
-    ],
-    forms: [
-      {
-        id: 'form-component-1',
-        field_schema: {
-          properties: {
-            name: { type: 'string', title: 'Name' },
-            email: { type: 'string', title: 'Email' }
-          }
-        }
-      },
-      {
-        id: 'form-component-2',
-        field_schema: {
-          properties: {
-            fullName: { type: 'string', title: 'Full Name' },
-            contactEmail: { type: 'string', title: 'Contact Email' }
-          }
-        }
-      }
-    ]
-  };
-
-  return (
-    <MappingEditor
-      form={form}
-      graphData={graphData}
-      onClose={() => console.log('Editor closed')}
-    />
-  );
-}
-```
-
-### Using Transformations
-
-The editor supports various data transformations:
-
-```tsx
-// Example of using transformations
-const mapping = {
-  id: 'mapping-1',
-  targetFormId: 'form-1',
-  targetFieldId: 'name',
-  source: {
-    type: 'direct',
-    formId: 'form-2',
-    fieldId: 'fullName',
-    label: 'Full Name'
-  },
-  transformation: {
-    type: 'uppercase',
-    params: {}
-  }
-};
-```
-
-### State Management
-
-The editor includes a custom hook for state management:
-
-```tsx
-import { useMappingState } from './hooks/useMappingState';
-
-function MyComponent() {
-  const {
-    state,
-    addMapping,
-    removeMapping,
-    updateMapping,
-    undo,
-    redo
-  } = useMappingState({
-    formId: 'form-1',
-    onError: (error) => console.error(error)
-  });
-
-  // Use the state management functions
-  const handleAddMapping = () => {
-    addMapping(newMapping);
-  };
-
-  const handleUndo = () => {
-    undo();
-  };
-}
-```
-
-## Development
-
-### Project Structure
-
-```
-src/
-  ├── components/
-  │   └── mappings/
-  │       └── MappingEditor.tsx
-  ├── hooks/
-  │   ├── useMappingState.ts
-  │   └── useMappings.ts
-  ├── lib/
-  │   └── services/
-  │       ├── mappingService.ts
-  │       ├── transformationService.ts
-  │       └── validationService.ts
-  ├── types/
-  │   ├── graph.ts
-  │   └── mappings.ts
-  └── styles/
-      └── MappingEditor.module.css
 ```
 
 ### Running Tests
 
 ```bash
+# Run unit tests
 npm test
+
+# Run integration tests
+npm run test:integration
+
+# Run end-to-end tests
+npm run test:e2e
+
+# Run all tests with coverage
+npm run test:coverage
 ```
 
-### Building for Production
+## Project Structure
 
-```bash
-npm run build
 ```
+src/
+  ├── core/           # Core business logic
+  │   ├── services/   # Business services
+  │   ├── hooks/      # Custom React hooks
+  │   ├── utils/      # Utility functions
+  │   └── types/      # TypeScript types
+  │
+  ├── features/       # Feature modules
+  │   ├── workflow/   # Workflow automation
+  │   ├── integration/# FHIR/HL7 integration
+  │   └── analytics/  # Analytics & monitoring
+  │
+  └── shared/         # Shared resources
+      ├── components/ # Reusable components
+      ├── layouts/    # Page layouts
+      └── styles/     # Global styles
+```
+
+## API Documentation
+
+The API documentation is available at `/api-docs` when running the server. It provides detailed information about:
+
+- Available endpoints
+- Request/response formats
+- Authentication
+- Error handling
+- Rate limiting
 
 ## Contributing
 
@@ -200,9 +138,42 @@ npm run build
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+### Development Guidelines
+
+- Follow the [TypeScript style guide](docs/STYLE_GUIDE.md)
+- Write tests for new features
+- Update documentation
+- Follow the [Git commit message convention](docs/COMMIT_CONVENTION.md)
+
+## Deployment
+
+### Production
+
+```bash
+# Build the application
+npm run build
+
+# Start the production server
+npm start
+```
+
+### Docker
+
+```bash
+# Build the Docker image
+docker build -t healthcare-integration .
+
+# Run the container
+docker run -p 3000:3000 healthcare-integration
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For support, email support@example.com or join our Slack channel.
 
 ```bash
 git clone https://github.com/robotwist/avantos-field-mapping
