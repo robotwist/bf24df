@@ -11,11 +11,11 @@ test('validates field types when creating mappings', async ({ page }) => {
   // Try to map incompatible fields
   await page.waitForSelector('[data-testid="source-form"]', { state: 'visible' });
   await page.waitForFunction(
-    () => document.querySelector('[data-testid="source-form"]')?.options.length > 1
+    () => (document.querySelector('[data-testid="source-form"]') as HTMLSelectElement)?.options.length > 1
   );
-  await page.selectOption('[data-testid="source-form"]', { index: 1 });
-  await page.selectOption('[data-testid="source-field"]', { index: 1 });
-  await page.selectOption('[data-testid="target-field"]', { index: 1 });
+  await page.selectOption('[data-testid="source-form"]', 'form-47c61d17-62b0-4c42-8ca2-0eff641c9d88');
+  await page.selectOption('[data-testid="source-field"]', 'email');
+  await page.selectOption('[data-testid="target-field"]', 'multi_select');
 
   // Verify validation error is shown
   const errorMessage = await page.textContent('[data-testid="validation-error"]');
@@ -33,11 +33,11 @@ test('shows data preview when selecting source and target fields', async ({ page
   // Select source and target fields
   await page.waitForSelector('[data-testid="source-form"]', { state: 'visible' });
   await page.waitForFunction(
-    () => document.querySelector('[data-testid="source-form"]')?.options.length > 1
+    () => (document.querySelector('[data-testid="source-form"]') as HTMLSelectElement)?.options.length > 1
   );
-  await page.selectOption('[data-testid="source-form"]', { index: 1 });
-  await page.selectOption('[data-testid="source-field"]', { index: 1 });
-  await page.selectOption('[data-testid="target-field"]', { index: 1 });
+  await page.selectOption('[data-testid="source-form"]', 'form-47c61d17-62b0-4c42-8ca2-0eff641c9d88');
+  await page.selectOption('[data-testid="source-field"]', 'email');
+  await page.selectOption('[data-testid="target-field"]', 'email');
 
   // Verify preview section is visible
   const previewSection = await page.locator('[data-testid="preview-section"]');
@@ -59,9 +59,9 @@ test('applies healthcare field templates', async ({ page }) => {
   // Select source form
   await page.waitForSelector('[data-testid="source-form"]', { state: 'visible' });
   await page.waitForFunction(
-    () => document.querySelector('[data-testid="source-form"]')?.options.length > 1
+    () => (document.querySelector('[data-testid="source-form"]') as HTMLSelectElement)?.options.length > 1
   );
-  await page.selectOption('[data-testid="source-form"]', { index: 1 });
+  await page.selectOption('[data-testid="source-form"]', 'form-47c61d17-62b0-4c42-8ca2-0eff641c9d88');
 
   // Click on a template button
   await page.waitForSelector('[data-testid="template-patient"]', { state: 'visible' });
@@ -83,11 +83,11 @@ test('applies complex data transformations', async ({ page }) => {
   // Select source and target fields
   await page.waitForSelector('[data-testid="source-form"]', { state: 'visible' });
   await page.waitForFunction(
-    () => document.querySelector('[data-testid="source-form"]')?.options.length > 1
+    () => (document.querySelector('[data-testid="source-form"]') as HTMLSelectElement)?.options.length > 1
   );
-  await page.selectOption('[data-testid="source-form"]', { index: 1 });
-  await page.selectOption('[data-testid="source-field"]', { index: 1 });
-  await page.selectOption('[data-testid="target-field"]', { index: 1 });
+  await page.selectOption('[data-testid="source-form"]', 'form-47c61d17-62b0-4c42-8ca2-0eff641c9d88');
+  await page.selectOption('[data-testid="source-field"]', 'name');
+  await page.selectOption('[data-testid="target-field"]', 'name');
 
   // Select a transformation
   await page.waitForSelector('[data-testid="transformation-select"]', { state: 'visible' });
@@ -111,18 +111,18 @@ test('validates healthcare-specific fields', async ({ page }) => {
   // Select source form
   await page.waitForSelector('[data-testid="source-form"]', { state: 'visible' });
   await page.waitForFunction(
-    () => document.querySelector('[data-testid="source-form"]')?.options.length > 1
+    () => (document.querySelector('[data-testid="source-form"]') as HTMLSelectElement)?.options.length > 1
   );
-  await page.selectOption('[data-testid="source-form"]', { index: 1 });
+  await page.selectOption('[data-testid="source-form"]', 'form-47c61d17-62b0-4c42-8ca2-0eff641c9d88');
 
-  // Test phone number validation
-  await page.selectOption('[data-testid="source-field"]', 'phone_field');
-  await page.selectOption('[data-testid="target-field"]', 'contact_phone');
+  // Test email validation
+  await page.selectOption('[data-testid="source-field"]', 'email');
+  await page.selectOption('[data-testid="target-field"]', 'email');
 
-  // Enter invalid phone number
-  await page.fill('[data-testid="preview-input"]', '1234567890');
+  // Enter invalid email
+  await page.fill('[data-testid="preview-input"]', 'invalid-email');
 
   // Verify validation error
   const errorMessage = await page.textContent('[data-testid="validation-error"]');
-  expect(errorMessage).toContain('Phone must be in format (XXX) XXX-XXXX');
+  expect(errorMessage).toContain('Invalid email format');
 }); 

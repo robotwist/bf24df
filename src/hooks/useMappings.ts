@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { FormNode, GraphData } from '../types/graph';
-import { FieldMapping, MappingSource, SourceType } from '../types/mappings';
-import { getFieldSchema } from '../lib/utils/validation';
+import { GraphData } from '../types/graph';
+import { FieldMapping, MappingSource } from '../types/mappings';
 
 export const useMappings = (graphData: GraphData | null) => {
   const [formMappings, setFormMappings] = useState<Record<string, FieldMapping[]>>({});
@@ -68,13 +67,13 @@ export const useMappings = (graphData: GraphData | null) => {
       const prereqNode = graphData.nodes.find(node => node.id === prereqId);
       if (prereqNode) {
         const form = graphData.forms.find(f => f.id === prereqNode.data.component_id);
-        if (form) {
+        if (form?.field_schema?.properties) {
           Object.entries(form.field_schema.properties).forEach(([fieldId, schema]) => {
             sources.push({
               type: 'direct',
               formId: prereqId,
               fieldId,
-              label: `${prereqNode.data.name} - ${schema.title || fieldId}`
+              label: `${prereqNode.data.name || 'Unknown Form'} - ${schema.title || fieldId}`
             });
           });
         }
@@ -86,13 +85,13 @@ export const useMappings = (graphData: GraphData | null) => {
       const prereqNode = graphData.nodes.find(node => node.id === prereqId);
       if (prereqNode) {
         const form = graphData.forms.find(f => f.id === prereqNode.data.component_id);
-        if (form) {
+        if (form?.field_schema?.properties) {
           Object.entries(form.field_schema.properties).forEach(([fieldId, schema]) => {
             sources.push({
               type: 'transitive',
               formId: prereqId,
               fieldId,
-              label: `${prereqNode.data.name} - ${schema.title || fieldId}`
+              label: `${prereqNode.data.name || 'Unknown Form'} - ${schema.title || fieldId}`
             });
           });
         }

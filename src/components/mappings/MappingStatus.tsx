@@ -1,6 +1,7 @@
 import React from 'react';
 import { FieldMapping } from '../../types/mappings';
 import { validateMapping } from '../../lib/utils/validation';
+import { FormSchema } from '../../types/forms';
 
 interface MappingStatusProps {
   mapping: FieldMapping;
@@ -13,7 +14,10 @@ export const MappingStatus: React.FC<MappingStatusProps> = ({
   sourceSchema,
   targetSchema
 }) => {
-  const validationResult = validateMapping(sourceSchema, targetSchema);
+  const validationResult = validateMapping(
+    sourceSchema.properties[mapping.source.fieldId],
+    targetSchema.properties[mapping.targetFieldId]
+  );
   const isValid = validationResult.isValid;
 
   const getSourceTypeLabel = () => {
@@ -38,7 +42,7 @@ export const MappingStatus: React.FC<MappingStatusProps> = ({
         <span>{getSourceTypeLabel()}</span>
         {!isValid && (
           <span className="mapping-error">
-            {validationResult.error}
+            {validationResult.message}
           </span>
         )}
       </div>

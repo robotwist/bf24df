@@ -131,7 +131,7 @@ const FormStructure: React.FC = () => {
       {selectedForm && data && (
         <div className={styles.mappingEditorContainer}>
           <MappingEditor 
-            form={selectedForm} 
+            formNode={selectedForm} 
             graphData={data}
             onClose={handleCloseMappingEditor}
           />

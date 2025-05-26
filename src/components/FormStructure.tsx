@@ -88,47 +88,93 @@ const FormStructure: React.FC = () => {
     </div>
   );
 
-  const renderFormDetails = (form: FormNode) => (
-    <div className={styles.formDetails} data-testid="form-details">
-      <h3>{form.data.name}</h3>
-      <div className={styles.formInfo}>
-        <div className={styles.infoSection}>
-          <h4>Fields</h4>
-          <ul>
-            {Object.entries(form.data.input_mapping).map(([key, value]) => (
-              <li key={key}>
-                <span className={styles.fieldName}>{key}</span>
-                <span className={styles.fieldType}>{typeof value}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className={styles.infoSection}>
-          <h4>Dependencies</h4>
-          {form.data.prerequisites.length > 0 ? (
+  const renderFormDetails = (form: FormNode) => {
+    // Find the form schema from the forms array
+    const formSchema = data?.forms.find(f => f.id === form.data.component_id);
+    
+    return (
+      <div className={styles.formDetails} data-testid="form-details">
+        <h3 data-testid="form-name">{formSchema?.name || form.data.name}</h3>
+        <p data-testid="form-description">{formSchema?.description || form.data.description}</p>
+        <div className={styles.formInfo}>
+          <div className={styles.infoSection}>
+            <h4>Fields</h4>
             <ul>
-              {form.data.prerequisites.map(prereqId => {
-                const prereq = data?.nodes.find(n => n.id === prereqId);
-                return (
-                  <li key={prereqId}>
-                    {prereq?.data.name || prereqId}
-                  </li>
-                );
-              })}
+              {formSchema?.field_schema?.properties && Object.entries(formSchema.field_schema.properties).map(([key, value]) => (
+                <li key={key} data-testid="form-field">
+                  <span className={styles.fieldName} data-testid="field-name">{key}</span>
+                  <span className={styles.fieldType} data-testid="field-type">{value.type}</span>
+                  <div className={styles.fieldProperties} data-testid="field-properties">
+                    {value && typeof value === 'object' && Object.entries(value).map(([propKey, propValue]) => {
+                      // Skip null values and format arrays/objects
+                      if (propValue === null) return null;
+                      const displayValue = Array.isArray(propValue) 
+                        ? JSON.stringify(propValue)
+                        : typeof propValue === 'object'
+                          ? JSON.stringify(propValue)
+                          : String(propValue);
+                      return (
+                        <span key={propKey} data-testid="field-property">
+                          {propKey}: {displayValue}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <div className={styles.validationRules} data-testid="validation-rules">
+                    {formSchema.field_schema.required?.includes(key) && (
+                      <span className={styles.validationRule} data-testid="validation-rule">required: true</span>
+                    )}
+                    {value.format && (
+                      <span className={styles.validationRule} data-testid="validation-rule">format: {value.format}</span>
+                    )}
+                    {value.pattern && (
+                      <span className={styles.validationRule} data-testid="validation-rule">pattern: {value.pattern}</span>
+                    )}
+                    {value.minLength && (
+                      <span className={styles.validationRule} data-testid="validation-rule">minLength: {value.minLength}</span>
+                    )}
+                    {value.maxLength && (
+                      <span className={styles.validationRule} data-testid="validation-rule">maxLength: {value.maxLength}</span>
+                    )}
+                    {value.minimum && (
+                      <span className={styles.validationRule} data-testid="validation-rule">minimum: {value.minimum}</span>
+                    )}
+                    {value.maximum && (
+                      <span className={styles.validationRule} data-testid="validation-rule">maximum: {value.maximum}</span>
+                    )}
+                  </div>
+                </li>
+              ))}
             </ul>
-          ) : (
-            <p>No dependencies</p>
-          )}
+          </div>
+          <div className={styles.infoSection}>
+            <h4>Dependencies</h4>
+            {form.data.prerequisites.length > 0 ? (
+              <ul>
+                {form.data.prerequisites.map(prereqId => {
+                  const prereq = data?.nodes.find(n => n.id === prereqId);
+                  return (
+                    <li key={prereqId} data-testid="form-dependency">
+                      {prereq?.data.name || prereqId}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p>No dependencies</p>
+            )}
+          </div>
         </div>
+        <button 
+          className={styles.editButton}
+          onClick={() => setIsMappingEditorOpen(true)}
+          data-testid="edit-mappings-button"
+        >
+          Edit Mappings
+        </button>
       </div>
-      <button 
-        className={styles.editButton}
-        onClick={() => setIsMappingEditorOpen(true)}
-      >
-        Edit Mappings
-      </button>
-    </div>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -183,19 +229,28 @@ const FormStructure: React.FC = () => {
             renderFormDetails(selectedForm)
           ) : (
             <div className={styles.noSelection}>
-              <p>Select a form to view details and edit mappings</p>
+              <p>Select a form to view details</p>
             </div>
           )}
         </div>
       </div>
-      
-      {isMappingEditorOpen && selectedForm && data && (
-        <div className={styles.mappingEditorContainer}>
-          <MappingEditor 
-            form={selectedForm} 
-            graphData={data}
-            onClose={handleCloseMappingEditor}
-          />
+
+      {isMappingEditorOpen && selectedForm && (
+        <div className={styles.modal} data-testid="mapping-modal">
+          <div className={styles.modalContent}>
+            <button 
+              className={styles.closeButton}
+              onClick={() => setIsMappingEditorOpen(false)}
+              data-testid="close-button"
+            >
+              ×
+            </button>
+            <MappingEditor
+              formNode={selectedForm}
+              graphData={data}
+              onClose={() => setIsMappingEditorOpen(false)}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -1,14 +1,25 @@
 import React from 'react';
-import FormStructure from "./components/FormStructure";
-import './App.css';
+import  ErrorBoundary  from './components/common/ErrorBoundary';
+import { ToastProvider } from './contexts/ToastContext';
+import FormList from './components/forms/FormList';
+import styles from './styles/App.module.css';
 
-function App() {
+const App: React.FC = () => {
   return (
-    <div className="App">
-      <FormStructure />
-    </div>
+    <ErrorBoundary>
+      <ToastProvider>
+        <div className={styles.app}>
+          <header className={styles.header}>
+            <h1>Form Mapping Tool</h1>
+          </header>
+          <main className={styles.main}>
+            <FormList />
+          </main>
+        </div>
+      </ToastProvider>
+    </ErrorBoundary>
   );
-}
+};
 
 export default App;
 
