@@ -9,35 +9,55 @@ interface IntegrationSettingsProps {
 
 export const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
   graphData,
-  onSettingsUpdate
+  onSettingsUpdate,
 }) => {
+  const [integrationService] = useState(() => new IntegrationService());
   const [settings, setSettings] = useState({
-    fhirEndpoint: '',
-    hl7Endpoint: '',
-    apiKey: '',
-    authToken: '',
-    retryAttempts: 3,
-    timeout: 5000
+    fhir: {
+      enabled: false,
+      serverUrl: '',
+      apiKey: '',
+      version: 'R4',
+    },
+    hl7: {
+      enabled: false,
+      serverUrl: '',
+      port: '',
+      facility: '',
+    },
+    auth: {
+      type: 'none',
+      username: '',
+      password: '',
+      token: '',
+    },
   });
-
   const [status, setStatus] = useState({
-    fhir: 'disconnected',
-    hl7: 'disconnected'
+    fhir: { connected: false, lastSync: null },
+    hl7: { connected: false, lastSync: null },
   });
-
   const [isTesting, setIsTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load saved settings from localStorage
+    loadSettings();
+  }, []);
+
+  const loadSettings = () => {
     const savedSettings = localStorage.getItem('integrationSettings');
     if (savedSettings) {
       setSettings(JSON.parse(savedSettings));
     }
-  }, []);
+  };
 
-  const handleSettingChange = (key: string, value: string | number) => {
-    const newSettings = { ...settings, [key]: value };
+  const handleSettingChange = (section: string, field: string, value: any) => {
+    const newSettings = {
+      ...settings,
+      [section]: {
+        ...settings[section as keyof typeof settings],
+        [field]: value,
+      },
+    };
     setSettings(newSettings);
     localStorage.setItem('integrationSettings', JSON.stringify(newSettings));
     onSettingsUpdate(newSettings);
@@ -48,41 +68,31 @@ export const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
     setError(null);
 
     try {
-      const integrationService = new IntegrationService(graphData, settings);
-      
       if (type === 'fhir') {
-        // Test FHIR connection with a simple Patient resource
         const testResource = {
           resourceType: 'Patient',
-          id: 'test',
-          meta: {
-            versionId: '1',
-            lastUpdated: new Date().toISOString()
-          }
+          id: 'test-patient',
+          name: [{ family: 'Test', given: ['Patient'] }],
         };
-
-        if (integrationService.validateFHIRResource(testResource)) {
-          setStatus(prev => ({ ...prev, fhir: 'connected' }));
-        }
+        await integrationService.sendToFHIRServer(testResource, settings.fhir);
+        setStatus(prev => ({
+          ...prev,
+          fhir: { connected: true, lastSync: new Date() },
+        }));
       } else {
-        // Test HL7 connection with a simple ADT message
-        const testMessage = {
-          messageType: 'ADT',
-          messageId: 'test',
-          timestamp: new Date().toISOString(),
-          segments: [{
-            segmentType: 'MSH',
-            fields: ['|', '^~\\&', 'SYSTEM', 'FACILITY', 'SYSTEM', 'FACILITY', new Date().toISOString(), '', 'ADT', 'test', 'P', '2.8']
-          }]
-        };
-
-        if (integrationService.validateHL7Message(testMessage)) {
-          setStatus(prev => ({ ...prev, hl7: 'connected' }));
-        }
+        const testMessage = integrationService.createTestHL7Message();
+        await integrationService.sendToHL7Server(testMessage, settings.hl7);
+        setStatus(prev => ({
+          ...prev,
+          hl7: { connected: true, lastSync: new Date() },
+        }));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Connection test failed');
-      setStatus(prev => ({ ...prev, [type]: 'error' }));
+      setError(`Failed to connect to ${type.toUpperCase()} server: ${err}`);
+      setStatus(prev => ({
+        ...prev,
+        [type]: { connected: false, lastSync: null },
+      }));
     } finally {
       setIsTesting(false);
     }
@@ -92,104 +102,170 @@ export const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
     <div className={styles.container}>
       <h2>Integration Settings</h2>
 
-      <div className={styles.section}>
-        <h3>FHIR Integration</h3>
-        <div className={styles.status}>
-          Status: <span className={styles[status.fhir]}>{status.fhir}</span>
-        </div>
-        <div className={styles.formGroup}>
-          <label>FHIR Endpoint</label>
-          <input
-            type="text"
-            value={settings.fhirEndpoint}
-            onChange={(e) => handleSettingChange('fhirEndpoint', e.target.value)}
-            placeholder="https://fhir-server.com/fhir"
-          />
-        </div>
-        <button
-          className={styles.testButton}
-          onClick={() => testConnection('fhir')}
-          disabled={isTesting || !settings.fhirEndpoint}
-        >
-          {isTesting ? 'Testing...' : 'Test Connection'}
-        </button>
+      <div className={styles.sections}>
+        <section className={styles.section}>
+          <h3>FHIR Integration</h3>
+          <div className={styles.formGroup}>
+            <label>
+              <input
+                type="checkbox"
+                checked={settings.fhir.enabled}
+                onChange={(e) => handleSettingChange('fhir', 'enabled', e.target.checked)}
+              />
+              Enable FHIR Integration
+            </label>
+          </div>
+          {settings.fhir.enabled && (
+            <>
+              <div className={styles.formGroup}>
+                <label>Server URL</label>
+                <input
+                  type="url"
+                  value={settings.fhir.serverUrl}
+                  onChange={(e) => handleSettingChange('fhir', 'serverUrl', e.target.value)}
+                  placeholder="https://fhir-server.example.com"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>API Key</label>
+                <input
+                  type="password"
+                  value={settings.fhir.apiKey}
+                  onChange={(e) => handleSettingChange('fhir', 'apiKey', e.target.value)}
+                  placeholder="Enter API key"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>FHIR Version</label>
+                <select
+                  value={settings.fhir.version}
+                  onChange={(e) => handleSettingChange('fhir', 'version', e.target.value)}
+                >
+                  <option value="R4">R4</option>
+                  <option value="R3">R3</option>
+                  <option value="R2">R2</option>
+                </select>
+              </div>
+              <button
+                className={styles.testButton}
+                onClick={() => testConnection('fhir')}
+                disabled={isTesting}
+              >
+                {isTesting ? 'Testing...' : 'Test Connection'}
+              </button>
+              {status.fhir.lastSync && (
+                <div className={styles.status}>
+                  Last sync: {new Date(status.fhir.lastSync).toLocaleString()}
+                </div>
+              )}
+            </>
+          )}
+        </section>
+
+        <section className={styles.section}>
+          <h3>HL7 Integration</h3>
+          <div className={styles.formGroup}>
+            <label>
+              <input
+                type="checkbox"
+                checked={settings.hl7.enabled}
+                onChange={(e) => handleSettingChange('hl7', 'enabled', e.target.checked)}
+              />
+              Enable HL7 Integration
+            </label>
+          </div>
+          {settings.hl7.enabled && (
+            <>
+              <div className={styles.formGroup}>
+                <label>Server URL</label>
+                <input
+                  type="url"
+                  value={settings.hl7.serverUrl}
+                  onChange={(e) => handleSettingChange('hl7', 'serverUrl', e.target.value)}
+                  placeholder="https://hl7-server.example.com"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Port</label>
+                <input
+                  type="text"
+                  value={settings.hl7.port}
+                  onChange={(e) => handleSettingChange('hl7', 'port', e.target.value)}
+                  placeholder="Port number"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Facility</label>
+                <input
+                  type="text"
+                  value={settings.hl7.facility}
+                  onChange={(e) => handleSettingChange('hl7', 'facility', e.target.value)}
+                  placeholder="Facility name"
+                />
+              </div>
+              <button
+                className={styles.testButton}
+                onClick={() => testConnection('hl7')}
+                disabled={isTesting}
+              >
+                {isTesting ? 'Testing...' : 'Test Connection'}
+              </button>
+              {status.hl7.lastSync && (
+                <div className={styles.status}>
+                  Last sync: {new Date(status.hl7.lastSync).toLocaleString()}
+                </div>
+              )}
+            </>
+          )}
+        </section>
+
+        <section className={styles.section}>
+          <h3>Authentication</h3>
+          <div className={styles.formGroup}>
+            <label>Authentication Type</label>
+            <select
+              value={settings.auth.type}
+              onChange={(e) => handleSettingChange('auth', 'type', e.target.value)}
+            >
+              <option value="none">None</option>
+              <option value="basic">Basic Auth</option>
+              <option value="token">Token</option>
+            </select>
+          </div>
+          {settings.auth.type === 'basic' && (
+            <>
+              <div className={styles.formGroup}>
+                <label>Username</label>
+                <input
+                  type="text"
+                  value={settings.auth.username}
+                  onChange={(e) => handleSettingChange('auth', 'username', e.target.value)}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Password</label>
+                <input
+                  type="password"
+                  value={settings.auth.password}
+                  onChange={(e) => handleSettingChange('auth', 'password', e.target.value)}
+                />
+              </div>
+            </>
+          )}
+          {settings.auth.type === 'token' && (
+            <div className={styles.formGroup}>
+              <label>Token</label>
+              <input
+                type="password"
+                value={settings.auth.token}
+                onChange={(e) => handleSettingChange('auth', 'token', e.target.value)}
+              />
+            </div>
+          )}
+        </section>
       </div>
 
-      <div className={styles.section}>
-        <h3>HL7 Integration</h3>
-        <div className={styles.status}>
-          Status: <span className={styles[status.hl7]}>{status.hl7}</span>
-        </div>
-        <div className={styles.formGroup}>
-          <label>HL7 Endpoint</label>
-          <input
-            type="text"
-            value={settings.hl7Endpoint}
-            onChange={(e) => handleSettingChange('hl7Endpoint', e.target.value)}
-            placeholder="https://hl7-server.com/receive"
-          />
-        </div>
-        <button
-          className={styles.testButton}
-          onClick={() => testConnection('hl7')}
-          disabled={isTesting || !settings.hl7Endpoint}
-        >
-          {isTesting ? 'Testing...' : 'Test Connection'}
-        </button>
-      </div>
-
-      <div className={styles.section}>
-        <h3>Authentication</h3>
-        <div className={styles.formGroup}>
-          <label>API Key</label>
-          <input
-            type="password"
-            value={settings.apiKey}
-            onChange={(e) => handleSettingChange('apiKey', e.target.value)}
-            placeholder="Enter API key"
-          />
-        </div>
-        <div className={styles.formGroup}>
-          <label>Auth Token</label>
-          <input
-            type="password"
-            value={settings.authToken}
-            onChange={(e) => handleSettingChange('authToken', e.target.value)}
-            placeholder="Enter auth token"
-          />
-        </div>
-      </div>
-
-      <div className={styles.section}>
-        <h3>Advanced Settings</h3>
-        <div className={styles.formGroup}>
-          <label>Retry Attempts</label>
-          <input
-            type="number"
-            value={settings.retryAttempts}
-            onChange={(e) => handleSettingChange('retryAttempts', parseInt(e.target.value))}
-            min="1"
-            max="5"
-          />
-        </div>
-        <div className={styles.formGroup}>
-          <label>Timeout (ms)</label>
-          <input
-            type="number"
-            value={settings.timeout}
-            onChange={(e) => handleSettingChange('timeout', parseInt(e.target.value))}
-            min="1000"
-            max="30000"
-            step="1000"
-          />
-        </div>
-      </div>
-
-      {error && (
-        <div className={styles.error}>
-          {error}
-        </div>
-      )}
+      {error && <div className={styles.error}>{error}</div>}
     </div>
   );
 }; 

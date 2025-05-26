@@ -9,23 +9,27 @@ interface WorkflowTemplatesProps {
 
 export const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
   graphData,
-  onTemplateSelect
+  onTemplateSelect,
 }) => {
   const [workflowService] = useState(() => new WorkflowService(graphData));
   const [templates, setTemplates] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadTemplates();
     loadSuggestions();
-  }, []);
+  }, [graphData]);
 
-  const loadTemplates = () => {
-    const availableTemplates = workflowService.getTemplates();
-    setTemplates(availableTemplates);
+  const loadTemplates = async () => {
+    try {
+      const availableTemplates = workflowService.getTemplates();
+      setTemplates(availableTemplates);
+    } catch (err) {
+      setError('Failed to load templates');
+      console.error('Error loading templates:', err);
+    }
   };
 
   const loadSuggestions = async () => {
@@ -34,93 +38,34 @@ export const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
       setSuggestions(aiSuggestions);
     } catch (err) {
       setError('Failed to load AI suggestions');
-    }
-  };
-
-  const handleTemplateSelect = async (templateId: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      await workflowService.automateWorkflow(templateId);
-      setSelectedTemplate(templateId);
-      onTemplateSelect(templateId);
-    } catch (err) {
-      setError('Failed to apply template');
+      console.error('Error loading suggestions:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const renderTemplateCard = (template: any) => (
-    <div
-      key={template.id}
-      className={`${styles.templateCard} ${
-        selectedTemplate === template.id ? styles.selected : ''
-      }`}
-      onClick={() => handleTemplateSelect(template.id)}
-    >
-      <h3>{template.name}</h3>
-      <p>{template.description}</p>
-      <div className={styles.metadata}>
-        <span className={styles.category}>{template.metadata.category}</span>
-        <span className={styles.time}>
-          {template.metadata.estimatedTime} min
-        </span>
-      </div>
-      <div className={styles.tags}>
-        {template.metadata.tags.map((tag: string) => (
-          <span key={tag} className={styles.tag}>
-            {tag}
-          </span>
-        ))}
-      </div>
-      <div className={styles.roles}>
-        {template.metadata.requiredRoles.map((role: string) => (
-          <span key={role} className={styles.role}>
-            {role}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
+  const handleTemplateSelect = (templateId: string) => {
+    onTemplateSelect(templateId);
+  };
 
-  const renderSuggestionCard = (suggestion: any) => (
-    <div key={suggestion.description} className={styles.suggestionCard}>
-      <div className={styles.suggestionHeader}>
-        <span className={styles.type}>{suggestion.type}</span>
-        <span className={styles.confidence}>
-          {Math.round(suggestion.confidence * 100)}% confidence
-        </span>
-      </div>
-      <p>{suggestion.description}</p>
-      <div className={styles.metadata}>
-        <div className={styles.reason}>
-          <strong>Reason:</strong> {suggestion.metadata.reason}
-        </div>
-        <div className={styles.impact}>
-          <strong>Impact:</strong> {suggestion.metadata.impact}
-        </div>
-        {suggestion.metadata.alternatives && (
-          <div className={styles.alternatives}>
-            <strong>Alternatives:</strong>
-            <ul>
-              {suggestion.metadata.alternatives.map((alt: string) => (
-                <li key={alt}>{alt}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-      <button
-        className={styles.applyButton}
-        onClick={() => suggestion.action()}
-        disabled={isLoading}
-      >
-        Apply Suggestion
-      </button>
-    </div>
-  );
+  const handleSuggestionApply = async (suggestionId: string) => {
+    try {
+      await workflowService.applySuggestion(suggestionId);
+      // Refresh suggestions after applying one
+      loadSuggestions();
+    } catch (err) {
+      setError('Failed to apply suggestion');
+      console.error('Error applying suggestion:', err);
+    }
+  };
+
+  if (isLoading) {
+    return <div className={styles.loading}>Loading workflow templates...</div>;
+  }
+
+  if (error) {
+    return <div className={styles.error}>{error}</div>;
+  }
 
   return (
     <div className={styles.container}>
@@ -132,36 +77,64 @@ export const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
             loadTemplates();
             loadSuggestions();
           }}
-          disabled={isLoading}
         >
           Refresh
         </button>
       </div>
 
-      {error && <div className={styles.error}>{error}</div>}
-
       <div className={styles.content}>
-        <div className={styles.templatesSection}>
+        <section className={styles.templatesSection}>
           <h3>Available Templates</h3>
           <div className={styles.templateGrid}>
-            {templates.map(renderTemplateCard)}
+            {templates.map((template) => (
+              <div
+                key={template.id}
+                className={styles.templateCard}
+                onClick={() => handleTemplateSelect(template.id)}
+              >
+                <h4>{template.name}</h4>
+                <p>{template.description}</p>
+                <div className={styles.metadata}>
+                  <span className={styles.category}>{template.category}</span>
+                  <span className={styles.time}>{template.estimatedTime}</span>
+                </div>
+                <div className={styles.tags}>
+                  {template.tags.map((tag: string) => (
+                    <span key={tag} className={styles.tag}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        </section>
 
-        <div className={styles.suggestionsSection}>
+        <section className={styles.suggestionsSection}>
           <h3>AI-Powered Suggestions</h3>
-          <div className={styles.suggestionsList}>
-            {suggestions.map(renderSuggestionCard)}
+          <div className={styles.suggestionGrid}>
+            {suggestions.map((suggestion) => (
+              <div key={suggestion.id} className={styles.suggestionCard}>
+                <div className={styles.suggestionHeader}>
+                  <h4>{suggestion.type}</h4>
+                  <span className={styles.confidence}>
+                    {Math.round(suggestion.confidence * 100)}% confidence
+                  </span>
+                </div>
+                <p>{suggestion.description}</p>
+                <div className={styles.suggestionActions}>
+                  <button
+                    className={styles.applyButton}
+                    onClick={() => handleSuggestionApply(suggestion.id)}
+                  >
+                    Apply Suggestion
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        </section>
       </div>
-
-      {isLoading && (
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <span>Processing...</span>
-        </div>
-      )}
     </div>
   );
 }; 
