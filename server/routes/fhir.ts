@@ -5,6 +5,23 @@ import { logger } from '../utils/logger';
 
 const router = Router();
 
+// Base FHIR route handler
+router.get('/', (req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    message: 'FHIR API is running',
+    endpoints: {
+      base: '/fhir',
+      getResource: '/fhir/{resourceType}/{id}',
+      createResource: '/fhir/{resourceType}',
+      updateResource: '/fhir/{resourceType}/{id}',
+      deleteResource: '/fhir/{resourceType}/{id}',
+      search: '/fhir/{resourceType}/_search'
+    },
+    documentation: '/api-docs'
+  });
+});
+
 /**
  * @swagger
  * /fhir/{resourceType}/{id}:

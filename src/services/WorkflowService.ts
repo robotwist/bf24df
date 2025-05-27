@@ -1,5 +1,13 @@
 import { GraphData, FormNode } from '../types/graph';
 
+interface User {
+  id: string;
+  name: string;
+  role: 'admin' | 'clinician' | 'nurse';
+  email: string;
+  permissions: string[];
+}
+
 interface WorkflowTemplate {
   id: string;
   name: string;
@@ -14,14 +22,16 @@ interface WorkflowTemplate {
 }
 
 interface AISuggestion {
+  id: string;
   type: 'node' | 'connection' | 'validation';
   confidence: number;
   description: string;
-  action: () => void;
+  action: () => Promise<void>;
   metadata: {
     reason: string;
     impact: string;
     alternatives?: string[];
+    requiredRole?: string;
   };
 }
 
@@ -36,11 +46,27 @@ export class WorkflowService {
   private graphData: GraphData;
   private templates: Map<string, WorkflowTemplate>;
   private aiModel: any; // Placeholder for AI model integration
+  private suggestions: Map<string, AISuggestion> = new Map();
+  private currentUser: User | null = null;
 
   constructor(graphData: GraphData) {
     this.graphData = graphData;
     this.templates = new Map();
     this.initializeTemplates();
+  }
+
+  public setCurrentUser(user: User | null) {
+    this.currentUser = user;
+    if (user) {
+      console.log(`WorkflowService: User set to ${user.name} (${user.role})`);
+    } else {
+      console.log('WorkflowService: No user set');
+    }
+  }
+
+  private hasRequiredRole(requiredRoles: string[]): boolean {
+    if (!this.currentUser || !requiredRoles) return false;
+    return requiredRoles.includes(this.currentUser.role);
   }
 
   private initializeTemplates() {
@@ -55,7 +81,7 @@ export class WorkflowService {
           category: 'Registration',
           tags: ['patient', 'intake', 'registration'],
           estimatedTime: 15,
-          requiredRoles: ['receptionist', 'nurse']
+          requiredRoles: ['admin', 'nurse']
         }
       },
       {
@@ -67,7 +93,7 @@ export class WorkflowService {
           category: 'Orders',
           tags: ['lab', 'orders', 'tests'],
           estimatedTime: 10,
-          requiredRoles: ['physician', 'nurse']
+          requiredRoles: ['admin', 'clinician', 'nurse']
         }
       }
     ];
@@ -126,18 +152,30 @@ export class WorkflowService {
 
   // Template Management
   public getTemplates(): WorkflowTemplate[] {
-    return Array.from(this.templates.values());
+    if (!this.currentUser) return [];
+    
+    return Array.from(this.templates.values())
+      .filter(template => this.hasRequiredRole(template.metadata.requiredRoles));
   }
 
   public getTemplateById(id: string): WorkflowTemplate | undefined {
-    return this.templates.get(id);
+    const template = this.templates.get(id);
+    if (!template || !this.currentUser) return undefined;
+    
+    return this.hasRequiredRole(template.metadata.requiredRoles) ? template : undefined;
   }
 
   public createTemplate(template: WorkflowTemplate): void {
+    if (!this.currentUser || !this.currentUser.permissions.includes('create_template')) {
+      throw new Error('Unauthorized: Insufficient permissions to create template');
+    }
     this.templates.set(template.id, template);
   }
 
   public updateTemplate(id: string, updates: Partial<WorkflowTemplate>): void {
+    if (!this.currentUser || !this.currentUser.permissions.includes('edit_template')) {
+      throw new Error('Unauthorized: Insufficient permissions to update template');
+    }
     const template = this.templates.get(id);
     if (template) {
       this.templates.set(id, { ...template, ...updates });
@@ -145,26 +183,29 @@ export class WorkflowService {
   }
 
   public deleteTemplate(id: string): void {
+    if (!this.currentUser || !this.currentUser.permissions.includes('delete_template')) {
+      throw new Error('Unauthorized: Insufficient permissions to delete template');
+    }
     this.templates.delete(id);
   }
 
   // AI-Powered Suggestions
   public async generateSuggestions(): Promise<AISuggestion[]> {
-    const suggestions: AISuggestion[] = [];
+    if (!this.currentUser) return [];
 
-    // Analyze workflow patterns
+    const suggestions: AISuggestion[] = [];
     const patterns = this.analyzeWorkflowPatterns();
     
-    // Generate node suggestions
+    // Generate role-specific suggestions
     suggestions.push(...this.generateNodeSuggestions(patterns));
-    
-    // Generate connection suggestions
     suggestions.push(...this.generateConnectionSuggestions(patterns));
-    
-    // Generate validation suggestions
     suggestions.push(...this.generateValidationSuggestions(patterns));
 
-    return suggestions;
+    // Filter suggestions based on user role
+    return suggestions.filter(suggestion => 
+      !suggestion.metadata.requiredRole || 
+      suggestion.metadata.requiredRole === this.currentUser?.role
+    );
   }
 
   private analyzeWorkflowPatterns(): any {
@@ -178,49 +219,79 @@ export class WorkflowService {
   }
 
   private generateNodeSuggestions(patterns: any): AISuggestion[] {
-    return [
+    const suggestions: AISuggestion[] = [
       {
+        id: 'add-consent-node',
         type: 'node',
         confidence: 0.85,
         description: 'Add patient consent form before lab orders',
-        action: () => this.addConsentNode(),
+        action: async () => {
+          if (!this.currentUser?.permissions.includes('add_node')) {
+            throw new Error('Unauthorized: Insufficient permissions to add node');
+          }
+          await this.addConsentNode();
+        },
         metadata: {
           reason: 'Common pattern in lab workflows',
           impact: 'Improves compliance and patient safety',
-          alternatives: ['Add consent checkbox to existing form']
+          alternatives: ['Add consent checkbox to existing form'],
+          requiredRole: 'clinician'
         }
       }
     ];
+
+    suggestions.forEach(suggestion => this.suggestions.set(suggestion.id, suggestion));
+    return suggestions;
   }
 
   private generateConnectionSuggestions(patterns: any): AISuggestion[] {
-    return [
+    const suggestions: AISuggestion[] = [
       {
+        id: 'add-insurance-verification',
         type: 'connection',
         confidence: 0.92,
         description: 'Connect insurance verification to patient intake',
-        action: () => this.addInsuranceVerificationConnection(),
+        action: async () => {
+          if (!this.currentUser?.permissions.includes('add_connection')) {
+            throw new Error('Unauthorized: Insufficient permissions to add connection');
+          }
+          await this.addInsuranceVerificationConnection();
+        },
         metadata: {
           reason: 'Reduces claim denials',
-          impact: 'Improves revenue cycle efficiency'
+          impact: 'Improves revenue cycle efficiency',
+          requiredRole: 'admin'
         }
       }
     ];
+
+    suggestions.forEach(suggestion => this.suggestions.set(suggestion.id, suggestion));
+    return suggestions;
   }
 
   private generateValidationSuggestions(patterns: any): AISuggestion[] {
-    return [
+    const suggestions: AISuggestion[] = [
       {
+        id: 'add-insurance-validation',
         type: 'validation',
         confidence: 0.78,
         description: 'Add validation for insurance policy numbers',
-        action: () => this.addInsuranceValidation(),
+        action: async () => {
+          if (!this.currentUser?.permissions.includes('add_validation')) {
+            throw new Error('Unauthorized: Insufficient permissions to add validation');
+          }
+          await this.addInsuranceValidation();
+        },
         metadata: {
           reason: 'Common source of errors',
-          impact: 'Reduces data entry errors'
+          impact: 'Reduces data entry errors',
+          requiredRole: 'nurse'
         }
       }
     ];
+
+    suggestions.forEach(suggestion => this.suggestions.set(suggestion.id, suggestion));
+    return suggestions;
   }
 
   // Workflow Automation
@@ -303,5 +374,26 @@ export class WorkflowService {
 
   private addInsuranceValidation(): void {
     // Implementation for adding insurance validation
+  }
+
+  public async applySuggestion(suggestionId: string): Promise<void> {
+    if (!this.currentUser) {
+      throw new Error('No user is currently logged in');
+    }
+
+    const suggestion = this.suggestions.get(suggestionId);
+    if (!suggestion) {
+      throw new Error(`Suggestion ${suggestionId} not found`);
+    }
+
+    if (suggestion.metadata.requiredRole && suggestion.metadata.requiredRole !== this.currentUser.role) {
+      throw new Error(`Unauthorized: This suggestion requires ${suggestion.metadata.requiredRole} role`);
+    }
+
+    // Apply the suggestion's action
+    await suggestion.action();
+
+    // Remove the applied suggestion
+    this.suggestions.delete(suggestionId);
   }
 } 

@@ -1,3 +1,8 @@
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
 interface Config {
   port: number;
   mongodb: {
@@ -15,8 +20,11 @@ interface Config {
   };
 }
 
-const config: Config = {
-  port: parseInt(process.env.PORT || '3000', 10),
+export const config: Config = {
+  server: {
+    port: process.env.PORT || 3000,
+    env: process.env.NODE_ENV || 'development',
+  },
   mongodb: {
     uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/healthcare-integration',
   },
@@ -25,11 +33,9 @@ const config: Config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
   },
   cors: {
-    origin: (process.env.CORS_ORIGIN || 'http://localhost:3003').split(','),
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   },
   logging: {
-    level: process.env.LOG_LEVEL || 'info',
+    level: process.env.LOG_LEVEL || 'debug',
   },
-};
-
-export { config }; 
+}; 

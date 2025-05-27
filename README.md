@@ -1,183 +1,129 @@
 # Healthcare Integration Platform
 
-A modern healthcare integration platform that supports FHIR and HL7 standards, with workflow automation capabilities.
+A modern healthcare integration platform built with React, Node.js, and MongoDB.
 
-## Features
+## Project Structure
 
-- 🔄 FHIR/HL7 Integration
-  - Full FHIR resource support
-  - HL7 message processing
-  - Real-time data synchronization
-  - Custom resource mapping
-
-- 🤖 Workflow Automation
-  - Visual workflow editor
-  - Custom workflow templates
-  - Event-driven automation
-  - Integration with external systems
-
-- 📊 Analytics & Monitoring
-  - Real-time dashboards
-  - Performance metrics
-  - Error tracking
-  - Audit logs
-
-- 🔒 Security
-  - OAuth2 authentication
-  - Role-based access control
-  - Data encryption
-  - Audit trails
-
-## Tech Stack
-
-- **Frontend**
-  - React 18
-  - TypeScript
-  - Vite
-  - TailwindCSS
-  - React Query
-
-- **Backend**
-  - Node.js
-  - Express
-  - TypeScript
-  - MongoDB
-  - Redis
-
-- **Testing**
-  - Jest
-  - React Testing Library
-  - Playwright
-  - Cypress
+```
+/
+├── src/                    # React frontend application
+│   ├── components/        # Reusable UI components
+│   ├── features/          # Feature-specific components and logic
+│   ├── hooks/            # Custom React hooks
+│   ├── contexts/         # React context providers
+│   ├── services/         # API and external service integrations
+│   ├── utils/            # Frontend utility functions
+│   ├── styles/           # Global styles and themes
+│   ├── assets/           # Static assets (images, fonts, etc.)
+│   └── types/            # TypeScript type definitions
+│
+├── server/                # Node.js backend application
+│   ├── config/           # Server configuration
+│   ├── routes/           # API route handlers
+│   ├── models/           # Database models
+│   ├── middleware/       # Express middleware
+│   ├── utils/            # Backend utility functions
+│   └── tests/            # Backend tests
+│
+├── shared/               # Shared code between frontend and backend
+│   ├── types/           # Shared TypeScript types
+│   ├── utils/           # Shared utility functions
+│   └── data/            # Shared data files
+│
+└── tests/               # Test suites
+    ├── unit/           # Unit tests
+    ├── integration/    # Integration tests
+    └── e2e/            # End-to-end tests
+```
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18.x or later
-- MongoDB 6.x or later
-- Redis 7.x or later
-- npm 9.x or later
+- Node.js (v18 or later)
+- pnpm (v8 or later)
+- MongoDB (v6 or later)
 
 ### Installation
 
 1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/healthcare-integration.git
-cd healthcare-integration
-```
+   ```bash
+   git clone <repository-url>
+   cd healthcare-integration
+   ```
 
 2. Install dependencies:
-```bash
-npm install
-```
+   ```bash
+   pnpm install
+   ```
 
 3. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
 
-4. Start the development server:
-```bash
-npm run dev
-```
+4. Start MongoDB:
+   ```bash
+   mongod --dbpath ./data/db
+   ```
+
+5. Start the development server:
+   ```bash
+   pnpm dev
+   ```
+
+The application will be available at:
+- Frontend: http://localhost:3000
+- API Documentation: http://localhost:3000/api-docs
+- Health Check: http://localhost:3000/health
+
+## Features
+
+- FHIR Resource Management
+- Healthcare Workflow Automation
+- Graph-based Form Builder
+- Real-time Data Integration
+- API Documentation with Swagger
+- MongoDB Integration
+- TypeScript Support
+
+## Development
 
 ### Running Tests
 
 ```bash
-# Run unit tests
-npm test
+# Run all tests
+pnpm test
 
-# Run integration tests
-npm run test:integration
-
-# Run end-to-end tests
-npm run test:e2e
-
-# Run all tests with coverage
-npm run test:coverage
+# Run specific test suites
+pnpm test:unit
+pnpm test:integration
+pnpm test:e2e
 ```
 
-## Project Structure
+### Building for Production
 
-```
-src/
-  ├── core/           # Core business logic
-  │   ├── services/   # Business services
-  │   ├── hooks/      # Custom React hooks
-  │   ├── utils/      # Utility functions
-  │   └── types/      # TypeScript types
-  │
-  ├── features/       # Feature modules
-  │   ├── workflow/   # Workflow automation
-  │   ├── integration/# FHIR/HL7 integration
-  │   └── analytics/  # Analytics & monitoring
-  │
-  └── shared/         # Shared resources
-      ├── components/ # Reusable components
-      ├── layouts/    # Page layouts
-      └── styles/     # Global styles
+```bash
+pnpm build
 ```
 
-## API Documentation
+## API Endpoints
 
-The API documentation is available at `/api-docs` when running the server. It provides detailed information about:
-
-- Available endpoints
-- Request/response formats
-- Authentication
-- Error handling
-- Rate limiting
+- `GET /` - Frontend application
+- `GET /health` - Health check endpoint
+- `GET /api-docs` - API documentation
+- `GET /api/graph` - Graph data
+- `GET /api/forms` - Form definitions
+- `GET/POST/PUT/DELETE /fhir/*` - FHIR resource endpoints
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow the [TypeScript style guide](docs/STYLE_GUIDE.md)
-- Write tests for new features
-- Update documentation
-- Follow the [Git commit message convention](docs/COMMIT_CONVENTION.md)
-
-## Deployment
-
-### Production
-
-```bash
-# Build the application
-npm run build
-
-# Start the production server
-npm start
-```
-
-### Docker
-
-```bash
-# Build the Docker image
-docker build -t healthcare-integration .
-
-# Run the container
-docker run -p 3000:3000 healthcare-integration
-```
+1. Create a feature branch
+2. Make your changes
+3. Run tests
+4. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For support, email support@example.com or join our Slack channel.
-
-```bash
-git clone https://github.com/robotwist/avantos-field-mapping
-cd avantos-field-mapping
-pnpm install
-pnpm dev
-pnpm test:e2e
+MIT
