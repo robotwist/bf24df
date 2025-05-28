@@ -4,7 +4,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 interface Config {
-  port: number;
+  server: {
+    port: number;
+    env: string;
+  };
   mongodb: {
     uri: string;
   };
@@ -22,7 +25,9 @@ interface Config {
 
 export const config: Config = {
   server: {
-    port: process.env.PORT || 3000,
+    port: process.env.NODE_ENV === 'production' 
+      ? parseInt(process.env.PORT || '3000', 10)
+      : parseInt(process.env.PORT || '3001', 10),
     env: process.env.NODE_ENV || 'development',
   },
   mongodb: {
@@ -33,7 +38,7 @@ export const config: Config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
   },
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3003'],
   },
   logging: {
     level: process.env.LOG_LEVEL || 'debug',

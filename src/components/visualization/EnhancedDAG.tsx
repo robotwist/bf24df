@@ -40,6 +40,8 @@ export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [showMinimap, setShowMinimap] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const workflowAnalytics = new WorkflowAnalytics(graphData);
   const healthcareCompliance = new HealthcareCompliance(graphData);
@@ -60,21 +62,19 @@ export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
       levels.set(nodeId, level);
 
       const node = graphData.nodes.find(n => n.id === nodeId);
-      if (!node) return;
-
-      node.data.prerequisites.forEach(prereqId => {
-        assignLevels(prereqId, level + 1);
-      });
+      if (node) {
+        node.data.prerequisites.forEach(prereqId => {
+          assignLevels(prereqId, level + 1);
+        });
+      }
     };
 
-    // Start from leaf nodes
-    graphData.nodes.forEach(node => {
-      if (node.data.prerequisites.length === 0) {
-        assignLevels(node.id, 0);
-      }
-    });
+    // Start with nodes that have no prerequisites
+    graphData.nodes
+      .filter(node => node.data.prerequisites.length === 0)
+      .forEach(node => assignLevels(node.id, 0));
 
-    // Second pass: calculate positions
+    // Second pass: position nodes
     const levelNodes = new Map<number, string[]>();
     levels.forEach((level, nodeId) => {
       if (!levelNodes.has(level)) {
@@ -83,12 +83,15 @@ export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
       levelNodes.get(level)?.push(nodeId);
     });
 
+    const levelWidth = 200;
+    const nodeHeight = 100;
+    const padding = 50;
+
     levelNodes.forEach((nodes, level) => {
-      const levelWidth = nodes.length * 200; // 200px spacing between nodes
       nodes.forEach((nodeId, index) => {
         newPositions[nodeId] = {
-          x: index * 200 - levelWidth / 2,
-          y: level * 150, // 150px vertical spacing
+          x: level * levelWidth + padding,
+          y: index * nodeHeight + padding,
           level
         };
       });
@@ -107,154 +110,148 @@ export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
   };
 
   const handlePanMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    setPan({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y
-    });
+    if (isDragging) {
+      setPan({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
   };
 
   const handlePanEnd = () => {
     setIsDragging(false);
   };
 
-  const toggleLayer = (layerId: string) => {
-    setActiveLayers(prev =>
-      prev.includes(layerId)
-        ? prev.filter(id => id !== layerId)
-        : [...prev, layerId]
-    );
+  const handleNodeHover = (nodeId: string) => {
+    setHoveredNode(nodeId);
   };
 
-  const getNodeMetrics = (node: FormNode) => {
-    const health = workflowAnalytics.calculateWorkflowHealth(node.id);
-    const compliance = healthcareCompliance.analyzeDataFlow(node.id);
-    
+  const handleNodeLeave = () => {
+    setHoveredNode(null);
+  };
+
+  const getNodeStyle = (nodeId: string) => {
+    const position = positions[nodeId];
+    const isSelected = nodeId === selectedFormId;
+    const isHovered = nodeId === hoveredNode;
+    const node = graphData.nodes.find(n => n.id === nodeId);
+    const healthScore = workflowAnalytics.calculateWorkflowHealth(nodeId).healthMetrics;
+
     return {
-      performance: health.performanceScore,
-      compliance: compliance.reduce((score, flow) => 
-        score + (flow.sensitivity === 'high' ? 1 : 0.5), 0
-      ) / compliance.length,
-      clinical: health.healthMetrics.completeness
+      transform: `translate(${position.x + pan.x}px, ${position.y + pan.y}px) scale(${zoom})`,
+      backgroundColor: isSelected ? '#e3f2fd' : isHovered ? '#f5f5f5' : 'white',
+      borderColor: isSelected ? '#2196F3' : isHovered ? '#9e9e9e' : '#e0e0e0',
+      boxShadow: isSelected ? '0 0 0 2px #2196F3' : isHovered ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+      opacity: healthScore.completeness
     };
   };
 
-  const renderNode = (node: FormNode) => {
-    const position = positions[node.id];
-    if (!position) return null;
+  const renderMinimap = () => {
+    if (!showMinimap) return null;
 
-    const metrics = getNodeMetrics(node);
-    const isSelected = node.id === selectedFormId;
+    const containerWidth = containerRef.current?.clientWidth || 0;
+    const containerHeight = containerRef.current?.clientHeight || 0;
+    const scale = 0.2;
 
     return (
-      <g
-        key={node.id}
-        transform={`translate(${position.x + pan.x}, ${position.y + pan.y})`}
-        onClick={() => onFormSelect?.(node.id)}
-        className={`${styles.node} ${isSelected ? styles.selected : ''}`}
-      >
-        <rect
-          width="120"
-          height="60"
-          rx="8"
-          fill="white"
-          stroke={isSelected ? '#3b82f6' : '#e5e7eb'}
-          strokeWidth={isSelected ? 2 : 1}
-        />
-        <text
-          x="60"
-          y="30"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          className={styles.nodeLabel}
-        >
-          {node.data.name}
-        </text>
-        {activeLayers.map(layer => (
-          <rect
-            key={layer}
-            width="120"
-            height="60"
-            rx="8"
-            fill={LAYERS.find(l => l.id === layer)?.color}
-            opacity={metrics[layer as keyof typeof metrics] * 
-              (LAYERS.find(l => l.id === layer)?.opacity || 0.3)}
-            className={styles.layerOverlay}
-          />
-        ))}
-      </g>
+      <div className={styles.minimap}>
+        {graphData.nodes.map(node => {
+          const position = positions[node.id];
+          return (
+            <div
+              key={node.id}
+              className={styles.minimapNode}
+              style={{
+                left: `${position.x * scale}px`,
+                top: `${position.y * scale}px`,
+                backgroundColor: node.id === selectedFormId ? '#2196F3' : '#9e9e9e'
+              }}
+            />
+          );
+        })}
+      </div>
     );
   };
 
-  const renderEdges = () => {
-    return graphData.edges.map(edge => {
-      const sourcePos = positions[edge.source];
-      const targetPos = positions[edge.target];
-      if (!sourcePos || !targetPos) return null;
-
-      return (
-        <g key={`${edge.source}-${edge.target}`} className={styles.edge}>
-          <path
-            d={`M ${sourcePos.x + pan.x + 60} ${sourcePos.y + pan.y + 30} 
-                C ${(sourcePos.x + targetPos.x) / 2 + pan.x} ${sourcePos.y + pan.y + 30},
-                  ${(sourcePos.x + targetPos.x) / 2 + pan.x} ${targetPos.y + pan.y + 30},
-                  ${targetPos.x + pan.x + 60} ${targetPos.y + pan.y + 30}`}
-            fill="none"
-            stroke="#e5e7eb"
-            strokeWidth="2"
-          />
-          <circle
-            cx={targetPos.x + pan.x + 60}
-            cy={targetPos.y + pan.y + 30}
-            r="4"
-            fill="#e5e7eb"
-          />
-        </g>
-      );
-    });
-  };
-
   return (
-    <div className={styles.container}>
+    <div 
+      ref={containerRef}
+      className={styles.dagContainer}
+      onMouseDown={handlePanStart}
+      onMouseMove={handlePanMove}
+      onMouseUp={handlePanEnd}
+      onMouseLeave={handlePanEnd}
+    >
       <div className={styles.controls}>
-        <div className={styles.layerControls}>
-          {LAYERS.map(layer => (
-            <button
-              key={layer.id}
-              className={`${styles.layerButton} ${
-                activeLayers.includes(layer.id) ? styles.active : ''
-              }`}
-              onClick={() => toggleLayer(layer.id)}
-              style={{ backgroundColor: layer.color }}
-            >
-              {layer.name}
-            </button>
-          ))}
-        </div>
         <div className={styles.zoomControls}>
           <button onClick={() => handleZoom(0.1)}>+</button>
           <button onClick={() => handleZoom(-0.1)}>-</button>
         </div>
-      </div>
-      <div
-        ref={containerRef}
-        className={styles.graphContainer}
-        onMouseDown={handlePanStart}
-        onMouseMove={handlePanMove}
-        onMouseUp={handlePanEnd}
-        onMouseLeave={handlePanEnd}
-      >
-        <svg
-          className={styles.graph}
-          style={{
-            transform: `scale(${zoom})`,
-            transformOrigin: 'center'
-          }}
+        <div className={styles.layerControls}>
+          {LAYERS.map(layer => (
+            <label key={layer.id} className={styles.layerToggle}>
+              <input
+                type="checkbox"
+                checked={activeLayers.includes(layer.id)}
+                onChange={() => {
+                  setActiveLayers(prev =>
+                    prev.includes(layer.id)
+                      ? prev.filter(id => id !== layer.id)
+                      : [...prev, layer.id]
+                  );
+                }}
+              />
+              {layer.name}
+            </label>
+          ))}
+        </div>
+        <button
+          className={styles.minimapToggle}
+          onClick={() => setShowMinimap(!showMinimap)}
         >
-          {renderEdges()}
-          {graphData.nodes.map(renderNode)}
-        </svg>
+          {showMinimap ? 'Hide Minimap' : 'Show Minimap'}
+        </button>
       </div>
+
+      <div className={styles.graph}>
+        {graphData.nodes.map(node => (
+          <div
+            key={node.id}
+            className={styles.node}
+            style={getNodeStyle(node.id)}
+            onClick={() => onFormSelect?.(node.id)}
+            onMouseEnter={() => handleNodeHover(node.id)}
+            onMouseLeave={handleNodeLeave}
+          >
+            <div className={styles.nodeContent}>
+              <h4>{node.data.name}</h4>
+              <div className={styles.nodeStats}>
+                <span>{node.data.prerequisites.length} deps</span>
+                <span>{Object.keys(node.data.input_mapping).length} fields</span>
+              </div>
+            </div>
+            {node.data.prerequisites.length > 0 && (
+              <div className={styles.dependencies}>
+                {node.data.prerequisites.map(prereqId => {
+                  const prereq = graphData.nodes.find(n => n.id === prereqId);
+                  return (
+                    <div
+                      key={prereqId}
+                      className={`${styles.dependency} ${
+                        hoveredNode === prereqId ? styles.hovered : ''
+                      }`}
+                    >
+                      ← {prereq?.data.name || prereqId}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {renderMinimap()}
     </div>
   );
 }; 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WorkflowService } from '../../services/WorkflowService';
 import { WorkflowTemplate, AISuggestion } from '../../services/WorkflowService';
+import { EnhancedDAG } from '../visualization/EnhancedDAG';
 import styles from '../../styles/WorkflowEditor.module.css';
 
 interface WorkflowEditorProps {
@@ -42,7 +43,7 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({
         
         // Generate suggestions for this template
         const templateSuggestions = await workflowService.generateSuggestions(templateId);
-        setSuggestions(templateSuggestions);
+        setSuggestions(templateSuggestions || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load template');
       } finally {
@@ -58,14 +59,14 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({
       await workflowService.applySuggestion(suggestionId);
       // Refresh suggestions after applying one
       const updatedSuggestions = await workflowService.generateSuggestions(templateId);
-      setSuggestions(updatedSuggestions);
+      setSuggestions(updatedSuggestions || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to apply suggestion');
     }
   };
 
   if (loading) {
-    return <div className={styles.loading}>Loading workflow...</div>;
+    return <div className={styles.loading}>Loading template...</div>;
   }
 
   if (error) {
@@ -82,30 +83,52 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({
         <button onClick={onBack} className={styles.backButton}>
           ← Back to Templates
         </button>
-        <h2>{template.metadata?.name || 'Untitled Workflow'}</h2>
+        <h2>{template.metadata?.name || 'Untitled Template'}</h2>
       </div>
 
       <div className={styles.content}>
-        <div className={styles.templateInfo}>
-          <h3>Template Details</h3>
-          <div className={styles.metadata}>
-            <p><strong>Description:</strong> {template.metadata?.description || 'No description'}</p>
-            <p><strong>Estimated Time:</strong> {template.metadata?.estimatedTime || 'Unknown'} min</p>
-            <p><strong>Required Role:</strong> {template.metadata?.requiredRole || 'Any'}</p>
-            {template.metadata?.tags && template.metadata.tags.length > 0 && (
-              <div className={styles.tags}>
-                <strong>Tags:</strong>
-                {template.metadata.tags.map(tag => (
-                  <span key={tag} className={styles.tag}>{tag}</span>
-                ))}
+        <div className={styles.leftPanel}>
+          <div className={styles.templateInfo}>
+            <div className={styles.description}>
+              <h3>Description</h3>
+              <p>{template.metadata?.description || 'No description available'}</p>
+            </div>
+
+            <div className={styles.metadata}>
+              <div className={styles.metaItem}>
+                <span className={styles.label}>Estimated Time:</span>
+                <span className={styles.value}>{template.metadata?.estimatedTime || 'Unknown'} min</span>
               </div>
-            )}
+              <div className={styles.metaItem}>
+                <span className={styles.label}>Required Role:</span>
+                <span className={styles.value}>{template.metadata?.requiredRole || 'Any'}</span>
+              </div>
+              {template.metadata?.tags && template.metadata.tags.length > 0 && (
+                <div className={styles.tags}>
+                  {template.metadata.tags.map(tag => (
+                    <span key={tag} className={styles.tag}>{tag}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.workflowVisualization}>
+            <h3>Workflow Structure</h3>
+            <EnhancedDAG
+              graphData={template.nodes}
+              selectedFormId={null}
+              onFormSelect={(formId) => {
+                // Handle form selection
+                console.log('Selected form:', formId);
+              }}
+            />
           </div>
         </div>
 
-        <div className={styles.suggestions}>
-          <h3>AI Suggestions</h3>
-          {suggestions.length > 0 ? (
+        <div className={styles.rightPanel}>
+          <div className={styles.suggestions}>
+            <h3>AI Suggestions</h3>
             <div className={styles.suggestionList}>
               {suggestions.map(suggestion => (
                 <div key={suggestion.id} className={styles.suggestionCard}>
@@ -116,25 +139,16 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({
                     </span>
                   </div>
                   <p>{suggestion.description}</p>
-                  {suggestion.metadata?.impact && (
-                    <p className={styles.impact}>
-                      <strong>Impact:</strong> {suggestion.metadata.impact}
-                    </p>
-                  )}
                   <button
-                    onClick={() => handleSuggestionApply(suggestion.id)}
                     className={styles.applyButton}
-                    disabled={!currentUser || (suggestion.metadata?.requiredRole && 
-                      !workflowService.hasRequiredRole(suggestion.metadata.requiredRole))}
+                    onClick={() => handleSuggestionApply(suggestion.id)}
                   >
                     Apply Suggestion
                   </button>
                 </div>
               ))}
             </div>
-          ) : (
-            <p className={styles.noSuggestions}>No suggestions available</p>
-          )}
+          </div>
         </div>
       </div>
     </div>

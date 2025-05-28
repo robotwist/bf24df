@@ -1,99 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { WorkflowService } from '../../services/WorkflowService';
+import { WorkflowTemplate, AISuggestion } from '../../services/WorkflowService';
 import styles from '../../styles/WorkflowTemplates.module.css';
-
-interface User {
-  id: string;
-  name: string;
-  role: 'admin' | 'clinician' | 'nurse';
-  email: string;
-  permissions: string[];
-}
-
-// Default demo user with admin privileges
-const DEFAULT_USER: User = {
-  id: 'demo-user',
-  name: 'Demo User',
-  role: 'admin',
-  email: 'demo@example.com',
-  permissions: [
-    'read:templates',
-    'write:templates',
-    'create_template',
-    'edit_template',
-    'delete_template',
-    'add_node',
-    'add_connection',
-    'add_validation'
-  ]
-};
 
 interface WorkflowTemplatesProps {
   graphData: any;
   onTemplateSelect: (templateId: string) => void;
-  currentUser?: User;
+  currentUser: {
+    id: string;
+    name: string;
+    role: string;
+    email: string;
+    permissions: string[];
+  } | null;
 }
 
 export const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
   graphData,
   onTemplateSelect,
-  currentUser = DEFAULT_USER, // Use default user if none provided
+  currentUser
 }) => {
-  const [workflowService] = useState(() => {
-    const service = new WorkflowService(graphData);
-    service.setCurrentUser(currentUser);
-    return service;
-  });
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [templates, setTemplates] = useState<WorkflowTemplate[]>([]);
+  const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [workflowService] = useState(() => new WorkflowService());
 
   useEffect(() => {
-    workflowService.setCurrentUser(currentUser);
+    if (currentUser) {
+      workflowService.setCurrentUser(currentUser);
+    }
+  }, [currentUser, workflowService]);
+
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const templatesData = await workflowService.getTemplates();
+        setTemplates(templatesData || []);
+        
+        // Generate suggestions for all templates
+        const allSuggestions = await workflowService.generateSuggestions();
+        setSuggestions(allSuggestions || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load templates');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadTemplates();
-    loadSuggestions();
-  }, [graphData, currentUser]);
-
-  const loadTemplates = async () => {
-    try {
-      const availableTemplates = workflowService.getTemplates();
-      setTemplates(availableTemplates || []);
-    } catch (err) {
-      setError('Failed to load templates');
-      console.error('Error loading templates:', err);
-    }
-  };
-
-  const loadSuggestions = async () => {
-    try {
-      const aiSuggestions = await workflowService.generateSuggestions();
-      setSuggestions(aiSuggestions || []);
-    } catch (err) {
-      setError('Failed to load AI suggestions');
-      console.error('Error loading suggestions:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleTemplateSelect = (templateId: string) => {
-    onTemplateSelect(templateId);
-  };
+  }, [workflowService]);
 
   const handleSuggestionApply = async (suggestionId: string) => {
     try {
       await workflowService.applySuggestion(suggestionId);
       // Refresh suggestions after applying one
-      loadSuggestions();
+      const updatedSuggestions = await workflowService.generateSuggestions();
+      setSuggestions(updatedSuggestions || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to apply suggestion');
-      console.error('Error applying suggestion:', err);
     }
   };
 
-  if (isLoading) {
-    return <div className={styles.loading}>Loading workflow templates...</div>;
+  if (loading) {
+    return <div className={styles.loading}>Loading templates...</div>;
   }
 
   if (error) {
@@ -101,101 +73,93 @@ export const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.workflowTemplates}>
       <div className={styles.header}>
         <h2>Workflow Templates</h2>
-        <div className={styles.userInfo}>
-          <span className={styles.userRole}>
-            {currentUser.role} {currentUser === DEFAULT_USER && '(Demo Mode)'}
-          </span>
-          <button
-            className={styles.refreshButton}
-            onClick={() => {
-              loadTemplates();
-              loadSuggestions();
-            }}
-          >
-            Refresh
-          </button>
-        </div>
+        {currentUser && (
+          <div className={styles.userInfo}>
+            Logged in as: {currentUser.name} ({currentUser.role})
+          </div>
+        )}
       </div>
 
       <div className={styles.content}>
-        <section className={styles.templatesSection}>
+        <div className={styles.templates}>
           <h3>Available Templates</h3>
-          <div className={styles.templateGrid}>
-            {templates && templates.length > 0 ? (
-              templates.map((template) => (
+          {templates.length > 0 ? (
+            <div className={styles.templateList}>
+              {templates.map(template => (
                 <div
                   key={`template-${template.id}`}
                   className={styles.templateCard}
-                  onClick={() => handleTemplateSelect(template.id)}
+                  onClick={() => onTemplateSelect(template.id)}
                 >
-                  <h4>{template.name}</h4>
-                  <p>{template.description}</p>
+                  <h4>{template.metadata?.name || 'Untitled Template'}</h4>
+                  <p>{template.metadata?.description || 'No description'}</p>
                   <div className={styles.metadata}>
-                    <span className={styles.category}>{template.metadata?.category}</span>
-                    <span className={styles.time}>{template.metadata?.estimatedTime} min</span>
-                  </div>
-                  <div className={styles.tags}>
-                    {template.metadata?.tags?.map((tag: string) => (
-                      <span key={`${template.id}-tag-${tag}`} className={styles.tag}>
-                        {tag}
+                    <span className={styles.time}>
+                      {template.metadata?.estimatedTime || 'Unknown'} min
+                    </span>
+                    {template.metadata?.requiredRole && (
+                      <span className={styles.role}>
+                        {template.metadata.requiredRole}
                       </span>
-                    ))}
+                    )}
                   </div>
-                  <div className={styles.roles}>
-                    {template.metadata?.requiredRoles?.map((role: string) => (
-                      <span key={`${template.id}-role-${role}`} className={styles.role}>
-                        {role}
-                      </span>
-                    ))}
-                  </div>
+                  {template.metadata?.tags && template.metadata.tags.length > 0 && (
+                    <div className={styles.tags}>
+                      {template.metadata.tags.map(tag => (
+                        <span key={`${template.id}-tag-${tag}`} className={styles.tag}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ))
-            ) : (
-              <div className={styles.noTemplates}>No templates available</div>
-            )}
-          </div>
-        </section>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.noTemplates}>
+              {currentUser ? 'No templates available' : 'Please log in to view templates'}
+            </p>
+          )}
+        </div>
 
-        <section className={styles.suggestionsSection}>
-          <h3>AI-Powered Suggestions</h3>
-          <div className={styles.suggestionGrid}>
-            {suggestions && suggestions.length > 0 ? (
-              suggestions.map((suggestion) => (
+        <div className={styles.suggestions}>
+          <h3>AI Suggestions</h3>
+          {suggestions.length > 0 ? (
+            <div className={styles.suggestionList}>
+              {suggestions.map(suggestion => (
                 <div key={`suggestion-${suggestion.id}`} className={styles.suggestionCard}>
                   <div className={styles.suggestionHeader}>
-                    <h4>{suggestion.type}</h4>
+                    <h4>{suggestion.title}</h4>
                     <span className={styles.confidence}>
                       {Math.round(suggestion.confidence * 100)}% confidence
                     </span>
                   </div>
                   <p>{suggestion.description}</p>
-                  <div className={styles.suggestionMetadata}>
-                    <span className={styles.impact}>Impact: {suggestion.metadata.impact}</span>
-                    {suggestion.metadata.requiredRole && (
-                      <span className={styles.requiredRole}>
-                        Required Role: {suggestion.metadata.requiredRole}
-                      </span>
-                    )}
-                  </div>
-                  <div className={styles.suggestionActions}>
-                    <button
-                      className={styles.applyButton}
-                      onClick={() => handleSuggestionApply(suggestion.id)}
-                      disabled={suggestion.metadata.requiredRole !== currentUser.role}
-                    >
-                      Apply Suggestion
-                    </button>
-                  </div>
+                  {suggestion.metadata?.impact && (
+                    <p className={styles.impact}>
+                      <strong>Impact:</strong> {suggestion.metadata.impact}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => handleSuggestionApply(suggestion.id)}
+                    className={styles.applyButton}
+                    disabled={!currentUser || (suggestion.metadata?.requiredRole && 
+                      !workflowService.hasRequiredRole(suggestion.metadata.requiredRole))}
+                  >
+                    Apply Suggestion
+                  </button>
                 </div>
-              ))
-            ) : (
-              <div className={styles.noSuggestions}>No suggestions available</div>
-            )}
-          </div>
-        </section>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.noSuggestions}>
+              {currentUser ? 'No suggestions available' : 'Please log in to view suggestions'}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
