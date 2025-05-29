@@ -2,154 +2,167 @@
 
 ## Overview
 
-This project uses Playwright for end-to-end testing. The test suite is organized into several categories to ensure comprehensive coverage of the application's functionality.
+This project uses a comprehensive testing strategy with Jest and React Testing Library for unit tests, and Playwright for end-to-end testing. The test suite is organized to ensure thorough coverage of all application components.
 
 ## Test Categories
 
-### 1. State Management Tests (`state-management.spec.ts`)
-Tests the application's state management capabilities:
-- Undo/redo operations
-- State persistence between sessions
-- Loading states during operations
-- Multiple operations handling
+### 1. Service Tests (`tests/services/`)
+Tests for core services:
+- Transformation Service
+  - String transformations
+  - Number formatting
+  - Date formatting
+  - Type validation
+- Validation Service
+  - Field type validation
+  - Mapping validation
+  - Error handling
 
-### 2. Error Handling Tests (`error-handling.spec.ts`)
-Verifies proper error handling:
-- Network errors
-- Validation errors
-- Transformation errors
-- Concurrent operation errors
-- State corruption recovery
+### 2. Hook Tests (`tests/hooks/`)
+Tests for custom React hooks:
+- useMappingState
+  - State management
+  - Error handling
+  - History operations
+- useToasts
+  - Toast creation
+  - Duration handling
+  - Auto-removal
 
-### 3. Accessibility Tests (`accessibility.spec.ts`)
-Ensures the application is accessible:
-- Keyboard navigation
-- ARIA attributes
-- Dynamic content announcements
-- Focus management
-- Screen reader support
-
-### 4. Performance Tests (`performance.spec.ts`)
-Validates application performance:
-- Large form loading
-- Multiple mapping operations
-- State updates
-- Concurrent operations
-- Large state history handling
+### 3. E2E Tests (`tests/e2e/`)
+End-to-end tests covering:
+- Form mapping workflow
+- DAG visualization
+- Error scenarios
+- User interactions
 
 ## Running Tests
 
 ### Prerequisites
-- Node.js 16 or higher
-- npm or yarn
+- Node.js 18 or higher
+- pnpm 8 or higher
+- MongoDB 6 or higher
 
 ### Installation
 ```bash
-npm install
+pnpm install
 ```
 
 ### Running Tests
 ```bash
 # Run all tests
-npm test
+pnpm test
 
-# Run specific test file
-npm test tests/state-management.spec.ts
+# Run specific test suites
+pnpm test:unit
+pnpm test:e2e
 
-# Run tests in UI mode
-npm run test:ui
-
-# Run tests in debug mode
-npm run test:debug
+# Run tests in watch mode
+pnpm test:watch
 ```
 
 ### Test Reports
 After running tests, you can find the following reports:
-- HTML Report: `playwright-report/index.html`
-- JSON Report: `test-results/test-results.json`
-- JUnit Report: `test-results/junit.xml`
+- Jest Coverage Report: `coverage/`
+- Playwright Report: `playwright-report/`
+- Test Results: `test-results/`
 
 ## Test Structure
 
-Each test file follows this structure:
-1. `beforeEach` hook for common setup
-2. Individual test cases with clear descriptions
-3. Assertions to verify expected behavior
-
-Example:
+### Unit Tests
 ```typescript
-test.describe('Feature', () => {
-  test.beforeEach(async ({ page }) => {
-    // Setup code
+describe('Service', () => {
+  beforeEach(() => {
+    // Setup
   });
 
-  test('should do something specific', async ({ page }) => {
-    // Test code
-    // Assertions
+  it('should perform specific operation', () => {
+    // Test implementation
+    expect(result).toBe(expected);
+  });
+});
+```
+
+### Hook Tests
+```typescript
+describe('useHook', () => {
+  it('should handle state correctly', () => {
+    const { result } = renderHook(() => useHook());
+    expect(result.current.value).toBe(expected);
+  });
+});
+```
+
+### E2E Tests
+```typescript
+test.describe('Feature', () => {
+  test('should complete workflow', async ({ page }) => {
+    await page.goto('/');
+    // Test implementation
+    await expect(page.locator('.result')).toHaveText('Expected');
   });
 });
 ```
 
 ## Best Practices
 
-1. **Test Isolation**
-   - Each test should be independent
-   - Use `beforeEach` for common setup
-   - Clean up after tests
+1. **Test Organization**
+   - Group related tests together
+   - Use descriptive test names
+   - Follow AAA pattern (Arrange, Act, Assert)
 
-2. **Selectors**
-   - Use `data-testid` attributes for reliable selection
-   - Avoid using CSS selectors that might change
-   - Keep selectors semantic and meaningful
+2. **Mocking**
+   - Mock external dependencies
+   - Use jest.mock for modules
+   - Create reusable mock data
 
 3. **Assertions**
-   - Be specific in assertions
-   - Test both positive and negative cases
-   - Verify error states and edge cases
+   - Be specific in expectations
+   - Test edge cases
+   - Verify error handling
 
 4. **Performance**
-   - Keep tests focused and efficient
-   - Avoid unnecessary waiting
+   - Keep tests focused
+   - Avoid unnecessary setup
    - Use appropriate timeouts
 
 ## Continuous Integration
 
-The test suite is configured to run in CI environments with:
-- Retry on failure (2 attempts)
-- Single worker to prevent race conditions
-- HTML and JUnit reports generation
-- Screenshot and video capture on failure
+The test suite runs in CI with:
+- Jest for unit tests
+- Playwright for E2E tests
+- Coverage reporting
+- Test result artifacts
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Tests failing in CI but passing locally**
-   - Check for timing issues
-   - Verify environment variables
-   - Review CI logs for details
+1. **Test Failures**
+   - Check test environment
+   - Verify mock implementations
+   - Review error messages
 
-2. **Flaky tests**
-   - Add appropriate waits
-   - Use reliable selectors
-   - Consider retry mechanisms
+2. **Timing Issues**
+   - Use appropriate waits
+   - Consider async operations
+   - Handle loading states
 
-3. **Performance issues**
-   - Review test timeouts
-   - Check for unnecessary operations
-   - Optimize test setup
+3. **Environment Setup**
+   - Verify MongoDB connection
+   - Check environment variables
+   - Review test configuration
 
 ### Debugging
 
-1. Use `npm run test:debug` for step-by-step debugging
-2. Check `playwright-report` for detailed failure information
-3. Review screenshots and videos in the test report
+1. Use `--debug` flag for detailed logs
+2. Check test reports for failure details
+3. Review console output for errors
 
 ## Contributing
 
 When adding new tests:
-1. Follow the existing test structure
-2. Add appropriate test IDs
-3. Include both positive and negative test cases
-4. Document any special setup requirements
-5. Update this documentation if necessary 
+1. Follow existing patterns
+2. Add appropriate test coverage
+3. Include both success and failure cases
+4. Update documentation as needed 

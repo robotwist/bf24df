@@ -13,40 +13,88 @@ Directory: avantos-coding-challenge
 # Journey Builder – Avantos Coding Challenge
 
 ## 🌟 Mission
-Rebuild a simplified version of the Avantos Journey Builder UI. The goal is to fetch a graph of form nodes (a DAG), render them in a basic list, and provide a flexible, editable UI to manage prefill mappings between form fields.
+Build a powerful form mapping and visualization system that allows users to create and manage complex form relationships through an intuitive DAG (Directed Acyclic Graph) interface.
 
 ## 📦 Tech Stack
 - React (Vite)
 - TypeScript
-- CSS Modules or simple styles
-- Mock API (via `frontendchallengeserver` repo)
+- CSS Modules
+- Jest + React Testing Library
+- Playwright for E2E testing
+- MongoDB for data persistence
 
-## 🎯 Core Objectives
-1. Fetch and render form DAG from the API
-2. Build UI for viewing/editing field prefill mappings
-3. Design architecture to allow easily pluggable new data sources
+## 🎯 Core Features
+1. Enhanced DAG Visualization
+   - Interactive node manipulation
+   - Real-time updates
+   - Custom styling and animations
+2. Form Mapping System
+   - Field type validation
+   - Data transformation
+   - Mapping visualization
+3. Robust Error Handling
+   - Toast notifications
+   - Error boundaries
+   - Validation feedback
 
-## 🧱 Folder Structure
+## 🧱 Project Structure
 ```
 /src
   /components
-  /hooks
-  /lib
-  /types
+    /visualization    # DAG visualization components
+    /ui              # Common UI components
+  /hooks             # Custom React hooks
+  /services          # Core services
+  /lib               # Utility libraries
+  /styles            # CSS modules
+  /types             # TypeScript types
   App.tsx
   main.tsx
 ```
 
 ## 🧪 Testing Strategy
-- Playwright or React Testing Library
-- Unit tests for DAG traversal logic
+- Unit Tests
+  - Service layer (transformation, validation)
+  - Custom hooks
+  - UI components
+- Integration Tests
+  - API endpoints
+  - Service integration
+- E2E Tests
+  - User flows
+  - Cross-browser testing
 
-## ✨ Bonus Ideas
-- Zustand for state
-- Animations
-- Test coverage
+## 🚀 Development Workflow
+1. Start MongoDB:
+   ```bash
+   ./scripts/start-mongodb.sh
+   ```
+
+2. Start development server:
+   ```bash
+   pnpm dev
+   ```
+
+3. Run tests:
+   ```bash
+   pnpm test        # All tests
+   pnpm test:unit   # Unit tests
+   pnpm test:e2e    # E2E tests
+   ```
+
+## ✨ Key Implementations
+- Type-safe development with TypeScript
+- Robust error handling and validation
+- Real-time data transformation
+- Interactive DAG visualization
+- Comprehensive test coverage
+
+## 📝 Notes
+- All components are built with TypeScript
+- CSS Modules for scoped styling
+- Jest + React Testing Library for unit tests
+- Playwright for E2E testing
+- MongoDB for data persistence
 
 ## Submission
 - GitHub repo named `bf24df`
-- Unlisted YouTube screen share (20–30 min)
-- Submit both via email to the address from the challenge instructions

@@ -1,6 +1,6 @@
 # Healthcare Integration Platform
 
-A modern healthcare integration platform built with React, Node.js, and MongoDB.
+A modern healthcare integration platform built with React, TypeScript, and Node.js, featuring a powerful form mapping and visualization system.
 
 ## Project Structure
 
@@ -8,32 +8,27 @@ A modern healthcare integration platform built with React, Node.js, and MongoDB.
 /
 ├── src/                    # React frontend application
 │   ├── components/        # Reusable UI components
-│   ├── features/          # Feature-specific components and logic
+│   │   ├── visualization/ # DAG visualization components
+│   │   └── ui/           # Common UI components
 │   ├── hooks/            # Custom React hooks
-│   ├── contexts/         # React context providers
-│   ├── services/         # API and external service integrations
-│   ├── utils/            # Frontend utility functions
-│   ├── styles/           # Global styles and themes
-│   ├── assets/           # Static assets (images, fonts, etc.)
+│   ├── services/         # Core services (transformation, validation)
+│   ├── lib/              # Utility libraries
+│   ├── styles/           # CSS modules and global styles
 │   └── types/            # TypeScript type definitions
 │
 ├── server/                # Node.js backend application
 │   ├── config/           # Server configuration
 │   ├── routes/           # API route handlers
 │   ├── models/           # Database models
-│   ├── middleware/       # Express middleware
 │   ├── utils/            # Backend utility functions
 │   └── tests/            # Backend tests
 │
-├── shared/               # Shared code between frontend and backend
-│   ├── types/           # Shared TypeScript types
-│   ├── utils/           # Shared utility functions
-│   └── data/            # Shared data files
+├── tests/                # Test suites
+│   ├── services/        # Service unit tests
+│   ├── hooks/          # Hook unit tests
+│   └── e2e/            # End-to-end tests
 │
-└── tests/               # Test suites
-    ├── unit/           # Unit tests
-    ├── integration/    # Integration tests
-    └── e2e/            # End-to-end tests
+└── scripts/             # Utility scripts
 ```
 
 ## Getting Started
@@ -57,18 +52,12 @@ A modern healthcare integration platform built with React, Node.js, and MongoDB.
    pnpm install
    ```
 
-3. Set up environment variables:
+3. Start MongoDB:
    ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
+   ./scripts/start-mongodb.sh
    ```
 
-4. Start MongoDB:
-   ```bash
-   mongod --dbpath ./data/db
-   ```
-
-5. Start the development server:
+4. Start the development server:
    ```bash
    pnpm dev
    ```
@@ -76,17 +65,25 @@ A modern healthcare integration platform built with React, Node.js, and MongoDB.
 The application will be available at:
 - Frontend: http://localhost:3000
 - API Documentation: http://localhost:3000/api-docs
-- Health Check: http://localhost:3000/health
 
 ## Features
 
-- FHIR Resource Management
-- Healthcare Workflow Automation
-- Graph-based Form Builder
-- Real-time Data Integration
-- API Documentation with Swagger
-- MongoDB Integration
-- TypeScript Support
+- Form Mapping System
+  - Field type validation
+  - Data transformation
+  - Mapping visualization
+- Enhanced DAG Visualization
+  - Interactive node manipulation
+  - Real-time updates
+  - Custom styling
+- Robust Error Handling
+  - Toast notifications
+  - Error boundaries
+  - Validation feedback
+- Type-Safe Development
+  - TypeScript throughout
+  - Comprehensive type definitions
+  - Strict type checking
 
 ## Development
 
@@ -98,7 +95,6 @@ pnpm test
 
 # Run specific test suites
 pnpm test:unit
-pnpm test:integration
 pnpm test:e2e
 ```
 
@@ -108,14 +104,18 @@ pnpm test:e2e
 pnpm build
 ```
 
-## API Endpoints
+## Testing Strategy
 
-- `GET /` - Frontend application
-- `GET /health` - Health check endpoint
-- `GET /api-docs` - API documentation
-- `GET /api/graph` - Graph data
-- `GET /api/forms` - Form definitions
-- `GET/POST/PUT/DELETE /fhir/*` - FHIR resource endpoints
+- Unit Tests
+  - Service layer testing
+  - Hook testing
+  - Component testing
+- Integration Tests
+  - API endpoint testing
+  - Service integration testing
+- E2E Tests
+  - User flow testing
+  - Cross-browser testing
 
 ## Contributing
 
