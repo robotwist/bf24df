@@ -1,129 +1,121 @@
-# Healthcare Integration Platform
+# Journey Builder React Coding Challenge
 
-A modern healthcare integration platform built with React, TypeScript, and Node.js, featuring a powerful form mapping and visualization system.
+A React application for visualizing and managing form DAGs with prefill mapping capabilities.
 
-## Project Structure
+## Features
 
-```
-/
-├── src/                    # React frontend application
-│   ├── components/        # Reusable UI components
-│   │   ├── visualization/ # DAG visualization components
-│   │   └── ui/           # Common UI components
-│   ├── hooks/            # Custom React hooks
-│   ├── services/         # Core services (transformation, validation)
-│   ├── lib/              # Utility libraries
-│   ├── styles/           # CSS modules and global styles
-│   └── types/            # TypeScript type definitions
-│
-├── server/                # Node.js backend application
-│   ├── config/           # Server configuration
-│   ├── routes/           # API route handlers
-│   ├── models/           # Database models
-│   ├── utils/            # Backend utility functions
-│   └── tests/            # Backend tests
-│
-├── tests/                # Test suites
-│   ├── services/        # Service unit tests
-│   ├── hooks/          # Hook unit tests
-│   └── e2e/            # End-to-end tests
-│
-└── scripts/             # Utility scripts
-```
+- Visualize form DAGs with interactive nodes and edges
+- Map fields between forms for data prefilling
+- Support for multiple data sources (Form, Global, Custom)
+- Real-time validation and transformation of mapped values
+- Toast notifications for user feedback
+- Comprehensive test coverage
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or later)
-- pnpm (v8 or later)
-- MongoDB (v6 or later)
+- Node.js 18+
+- pnpm 8+
 
 ### Installation
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd healthcare-integration
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/journey-builder.git
+cd journey-builder
 
-2. Install dependencies:
-   ```bash
-   pnpm install
-   ```
+# Install dependencies
+pnpm install
 
-3. Start MongoDB:
-   ```bash
-   ./scripts/start-mongodb.sh
-   ```
+# Start development server
+pnpm dev
 
-4. Start the development server:
-   ```bash
-   pnpm dev
-   ```
+# Run tests
+pnpm test
+```
 
-The application will be available at:
-- Frontend: http://localhost:3000
-- API Documentation: http://localhost:3000/api-docs
+## Project Structure
 
-## Features
+```
+src/
+├── components/          # React components
+├── hooks/              # Custom React hooks
+├── services/           # Business logic and utilities
+├── types/              # TypeScript type definitions
+└── utils/              # Helper functions
+```
 
-- Form Mapping System
-  - Field type validation
-  - Data transformation
-  - Mapping visualization
-- Enhanced DAG Visualization
-  - Interactive node manipulation
-  - Real-time updates
-  - Custom styling
-- Robust Error Handling
-  - Toast notifications
-  - Error boundaries
-  - Validation feedback
-- Type-Safe Development
-  - TypeScript throughout
-  - Comprehensive type definitions
-  - Strict type checking
+## Documentation
 
-## Development
+- [Development Guide](docs/README.dev.md) - Setup and development workflow
+- [Testing Guide](docs/TESTING.md) - Testing strategy and examples
+- [Architecture Guide](docs/ARCHITECTURE.md) - Component composition and data source extension
 
-### Running Tests
+## Key Components
+
+### DAG Visualization
+- Interactive node selection
+- Edge highlighting
+- Zoom and pan controls
+
+### Form Mapping
+- Field mapping interface
+- Data source selection
+- Value transformation
+- Real-time validation
+
+### Data Sources
+- Form data source
+- Global data source
+- Extensible for custom sources
+
+## Testing
 
 ```bash
 # Run all tests
 pnpm test
 
-# Run specific test suites
+# Run unit tests
 pnpm test:unit
+
+# Run end-to-end tests
 pnpm test:e2e
 ```
 
-### Building for Production
-
-```bash
-pnpm build
-```
-
-## Testing Strategy
-
-- Unit Tests
-  - Service layer testing
-  - Hook testing
-  - Component testing
-- Integration Tests
-  - API endpoint testing
-  - Service integration testing
-- E2E Tests
-  - User flow testing
-  - Cross-browser testing
-
 ## Contributing
 
-1. Create a feature branch
-2. Make your changes
-3. Run tests
-4. Submit a pull request
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Version Control
+
+### Branching Strategy
+- `main` - Production-ready code
+- `develop` - Development branch
+- `feature/*` - Feature branches
+- `bugfix/*` - Bug fix branches
+
+### Commit Messages
+We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `docs:` - Documentation changes
+- `style:` - Code style changes
+- `refactor:` - Code refactoring
+- `test:` - Test changes
+- `chore:` - Maintenance tasks
+
+### Pull Request Process
+1. Update documentation
+2. Add tests for new features
+3. Ensure all tests pass
+4. Update the changelog
+5. Get code review approval
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
