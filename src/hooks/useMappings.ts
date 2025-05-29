@@ -5,17 +5,6 @@ import { FieldMapping, MappingSource } from '../types/mappings';
 export const useMappings = (graphData: GraphData | null) => {
   const [formMappings, setFormMappings] = useState<Record<string, FieldMapping[]>>({});
 
-  // Debug: Log graph data changes
-  useEffect(() => {
-    if (graphData) {
-      console.log('🔍 Graph Data Updated:', {
-        nodeCount: graphData.nodes.length,
-        formCount: graphData.forms.length,
-        edgeCount: graphData.edges.length
-      });
-    }
-  }, [graphData]);
-
   const getTransitiveDependencies = useCallback((formId: string): string[] => {
     if (!graphData) return [];
 
@@ -36,15 +25,7 @@ export const useMappings = (graphData: GraphData | null) => {
     };
 
     traverse(formId);
-    const result = Array.from(dependencies);
-    
-    // Debug: Log dependency resolution
-    console.log('🔗 Dependencies for form:', formId, {
-      direct: graphData.nodes.find(n => n.id === formId)?.data.prerequisites || [],
-      transitive: result
-    });
-    
-    return result;
+    return Array.from(dependencies);
   }, [graphData]);
 
   const getAvailableSources = useCallback((formId: string, targetFieldPath: string[]): MappingSource[] => {
@@ -110,61 +91,30 @@ export const useMappings = (graphData: GraphData | null) => {
       label: 'User Email'
     });
 
-    // Debug: Log available sources
-    console.log('🎯 Available sources for form:', formId, {
-      targetField: targetFieldPath.join('.'),
-      sourceCount: sources.length,
-      byType: {
-        direct: sources.filter(s => s.type === 'direct').length,
-        transitive: sources.filter(s => s.type === 'transitive').length,
-        global: sources.filter(s => s.type === 'global').length
-      }
-    });
-
     return sources;
   }, [graphData, getTransitiveDependencies]);
 
-  // Debug: Log mapping changes
-  useEffect(() => {
-    console.log('📝 Current mappings:', {
-      formCount: Object.keys(formMappings).length,
-      totalMappings: Object.values(formMappings).reduce((sum, arr) => sum + arr.length, 0)
-    });
-  }, [formMappings]);
-
   const addMapping = useCallback((formId: string, mapping: FieldMapping) => {
-    setFormMappings(prev => {
-      const newMappings = {
-        ...prev,
-        [formId]: [...(prev[formId] || []), mapping]
-      };
-      console.log('➕ Added mapping:', { formId, mapping });
-      return newMappings;
-    });
+    setFormMappings(prev => ({
+      ...prev,
+      [formId]: [...(prev[formId] || []), mapping]
+    }));
   }, []);
 
   const removeMapping = useCallback((formId: string, mappingId: string) => {
-    setFormMappings(prev => {
-      const newMappings = {
-        ...prev,
-        [formId]: (prev[formId] || []).filter(m => m.id !== mappingId)
-      };
-      console.log('➖ Removed mapping:', { formId, mappingId });
-      return newMappings;
-    });
+    setFormMappings(prev => ({
+      ...prev,
+      [formId]: (prev[formId] || []).filter(m => m.id !== mappingId)
+    }));
   }, []);
 
   const updateMapping = useCallback((formId: string, mappingId: string, source: MappingSource) => {
-    setFormMappings(prev => {
-      const newMappings = {
-        ...prev,
-        [formId]: (prev[formId] || []).map(m => 
-          m.id === mappingId ? { ...m, source } : m
-        )
-      };
-      console.log('🔄 Updated mapping:', { formId, mappingId, source });
-      return newMappings;
-    });
+    setFormMappings(prev => ({
+      ...prev,
+      [formId]: (prev[formId] || []).map(m => 
+        m.id === mappingId ? { ...m, source } : m
+      )
+    }));
   }, []);
 
   return {

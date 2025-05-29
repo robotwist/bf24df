@@ -1,13 +1,16 @@
-import { FHIRService } from './services/fhir';
-import { WorkflowService } from './services/workflow';
-import { HL7Service } from './services/hl7';
-import { AuthService } from './services/auth';
 import { Logger } from './utils/logger';
 import { Config } from './config';
 
+type ServiceType = 'config' | 'logger';
+
+interface Service {
+  initialize?(): Promise<void>;
+  destroy?(): Promise<void>;
+}
+
 class Container {
   private static instance: Container;
-  private services: Map<string, any> = new Map();
+  private services: Map<ServiceType, Service> = new Map();
 
   private constructor() {
     this.initializeServices();
@@ -20,7 +23,7 @@ class Container {
     return Container.instance;
   }
 
-  private initializeServices(): void {
+  private async initializeServices(): Promise<void> {
     // Core services
     const config = new Config();
     const logger = new Logger(config);
@@ -29,19 +32,29 @@ class Container {
     this.services.set('config', config);
     this.services.set('logger', logger);
 
-    // Register business services
-    this.services.set('fhir', new FHIRService(config, logger));
-    this.services.set('workflow', new WorkflowService(config, logger));
-    this.services.set('hl7', new HL7Service(config, logger));
-    this.services.set('auth', new AuthService(config, logger));
+    // Initialize services that need it
+    for (const service of this.services.values()) {
+      if (service.initialize) {
+        await service.initialize();
+      }
+    }
   }
 
-  public get<T>(serviceName: string): T {
+  public get<T extends Service>(serviceName: ServiceType): T {
     const service = this.services.get(serviceName);
     if (!service) {
       throw new Error(`Service ${serviceName} not found in container`);
     }
     return service as T;
+  }
+
+  public async destroy(): Promise<void> {
+    for (const service of this.services.values()) {
+      if (service.destroy) {
+        await service.destroy();
+      }
+    }
+    this.services.clear();
   }
 }
 
