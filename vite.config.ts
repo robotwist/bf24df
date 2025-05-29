@@ -6,15 +6,15 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3003,
+    port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },
       '/fhir': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },
@@ -24,5 +24,9 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
   },
 })

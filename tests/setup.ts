@@ -1,45 +1,70 @@
 import '@testing-library/jest-dom';
-import { configure } from '@testing-library/react';
+import { vi } from 'vitest';
 import { TextEncoder, TextDecoder } from 'util';
 
-// Configure testing-library
-configure({
-  testIdAttribute: 'data-testid',
+// Mock window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
 });
 
-// Mock fetch
-global.fetch = jest.fn();
+// Mock ResizeObserver
+class ResizeObserver {
+  observe(): void {
+    // Mock implementation
+  }
+  unobserve(): void {
+    // Mock implementation
+  }
+  disconnect(): void {
+    // Mock implementation
+  }
+}
+
+window.ResizeObserver = ResizeObserver;
 
 // Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  observe() { return null; }
-  unobserve() { return null; }
-  disconnect() { return null; }
-};
+class IntersectionObserver {
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+  }
 
-// Mock ResizeObserver
-global.ResizeObserver = class ResizeObserver {
-  constructor() {}
-  observe() { return null; }
-  unobserve() { return null; }
-  disconnect() { return null; }
-};
+  private callback: IntersectionObserverCallback;
+
+  observe(): void {
+    // Mock implementation
+  }
+  unobserve(): void {
+    // Mock implementation
+  }
+  disconnect(): void {
+    // Mock implementation
+  }
+}
+
+window.IntersectionObserver = IntersectionObserver;
+
+// Mock fetch
+global.fetch = vi.fn();
 
 // Add TextEncoder/TextDecoder for tests
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as any;
 
-// Mock console.error to fail tests on React warnings
+// Mock console.error to fail tests
 const originalError = console.error;
-console.error = (...args) => {
-  if (
-    typeof args[0] === 'string' &&
-    args[0].includes('Warning: ReactDOM.render is no longer supported')
-  ) {
-    return;
-  }
+console.error = (...args: unknown[]) => {
   originalError.call(console, ...args);
+  throw new Error(args.join(' '));
 };
 
 // Clean up after each test

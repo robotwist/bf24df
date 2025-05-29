@@ -1,20 +1,16 @@
 import { GraphData, FormNode } from '../types/graph';
+import { EventBus } from '../core/events/EventBus';
 
 interface User {
   id: string;
   name: string;
-  role: string;
-  avatar?: string;
-  lastActive: string;
+  email: string;
 }
 
 interface CollaborationSession {
   id: string;
-  formId: string;
-  participants: User[];
-  activeUsers: Set<string>;
-  changes: CollaborationChange[];
-  status: 'active' | 'resolved' | 'conflict';
+  users: User[];
+  lastActivity: Date;
 }
 
 interface CollaborationChange {
@@ -42,71 +38,81 @@ interface Comment {
 }
 
 export class CollaborationService {
-  private graphData: GraphData;
-  private sessions: Map<string, CollaborationSession> = new Map();
-  private comments: Map<string, Comment[]> = new Map();
-  private presenceTimeout: number = 30000; // 30 seconds
+  private eventBus: EventBus;
+  private sessions: Map<string, CollaborationSession>;
+  private readonly SESSION_TIMEOUT = 30000; // 30 seconds
 
-  constructor(graphData: GraphData) {
-    this.graphData = graphData;
+  constructor() {
+    this.eventBus = new EventBus();
+    this.sessions = new Map();
+    this.startSessionCleanup();
   }
 
-  // Session Management
-  public createSession(formId: string, userId: string): CollaborationSession {
+  private startSessionCleanup(): void {
+    setInterval(() => {
+      const now = new Date();
+      for (const [sessionId, session] of this.sessions.entries()) {
+        if (now.getTime() - session.lastActivity.getTime() > this.SESSION_TIMEOUT) {
+          this.sessions.delete(sessionId);
+          this.eventBus.publish('session:ended', { sessionId });
+        }
+      }
+    }, 5000);
+  }
+
+  createSession(users: User[]): string {
+    const sessionId = Math.random().toString(36).substring(7);
     const session: CollaborationSession = {
-      id: crypto.randomUUID(),
-      formId,
-      participants: [],
-      activeUsers: new Set([userId]),
-      changes: [],
-      status: 'active'
+      id: sessionId,
+      users,
+      lastActivity: new Date(),
     };
-
-    this.sessions.set(session.id, session);
-    return session;
+    this.sessions.set(sessionId, session);
+    this.eventBus.publish('session:created', { sessionId, users });
+    return sessionId;
   }
 
-  public joinSession(sessionId: string, user: User): void {
+  joinSession(sessionId: string, user: User): void {
     const session = this.sessions.get(sessionId);
-    if (!session) throw new Error('Session not found');
-
-    session.participants.push(user);
-    session.activeUsers.add(user.id);
-    this.updateUserPresence(user.id);
-  }
-
-  public leaveSession(sessionId: string, userId: string): void {
-    const session = this.sessions.get(sessionId);
-    if (!session) throw new Error('Session not found');
-
-    session.activeUsers.delete(userId);
-    if (session.activeUsers.size === 0) {
-      this.sessions.delete(sessionId);
+    if (session) {
+      session.users.push(user);
+      session.lastActivity = new Date();
+      this.eventBus.publish('user:joined', { sessionId, user });
     }
   }
 
-  // User Presence
-  public updateUserPresence(userId: string): void {
-    const now = new Date().toISOString();
-    this.sessions.forEach(session => {
-      if (session.activeUsers.has(userId)) {
-        const user = session.participants.find(p => p.id === userId);
-        if (user) {
-          user.lastActive = now;
-        }
-      }
-    });
+  leaveSession(sessionId: string, userId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.users = session.users.filter(user => user.id !== userId);
+      session.lastActivity = new Date();
+      this.eventBus.publish('user:left', { sessionId, userId });
+    }
   }
 
-  public getActiveUsers(sessionId: string): User[] {
+  updateSessionActivity(sessionId: string): void {
     const session = this.sessions.get(sessionId);
-    if (!session) throw new Error('Session not found');
+    if (session) {
+      session.lastActivity = new Date();
+    }
+  }
 
-    const now = new Date().getTime();
-    return session.participants.filter(user => {
-      const lastActive = new Date(user.lastActive).getTime();
-      return now - lastActive < this.presenceTimeout;
-    });
+  getSessionUsers(sessionId: string): User[] {
+    return this.sessions.get(sessionId)?.users || [];
+  }
+
+  subscribeToSessionEvents(
+    eventType: string,
+    callback: (data: unknown) => void
+  ): void {
+    this.eventBus.subscribe(eventType, callback);
+  }
+
+  unsubscribeFromSessionEvents(
+    eventType: string,
+    callback: (data: unknown) => void
+  ): void {
+    this.eventBus.unsubscribe(eventType, callback);
   }
 
   // Change Tracking
@@ -268,7 +274,7 @@ export class CollaborationService {
     return {
       changes: session.changes,
       comments: this.comments.get(sessionId) || [],
-      participants: session.participants
+      participants: session.users
     };
   }
 } 

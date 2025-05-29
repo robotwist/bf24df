@@ -1,75 +1,46 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import styles from '../../styles/ErrorBoundary.module.css';
 
 interface Props {
   children: ReactNode;
-  fallback?: ReactNode;
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
-  errorInfo: ErrorInfo | null;
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-    error: null,
-    errorInfo: null
-  };
-
-  public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error, errorInfo: null };
-  }
-
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
-    this.setState({
-      error,
-      errorInfo
-    });
-  }
-
-  private handleReset = () => {
-    this.setState({
+  constructor(props: Props) {
+    super(props);
+    this.state = {
       hasError: false,
-      error: null,
-      errorInfo: null
-    });
-  };
+      error: null
+    };
+  }
 
-  public render() {
+  static getDerivedStateFromError(error: Error): State {
+    return {
+      hasError: true,
+      error
+    };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render(): ReactNode {
     if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
       return (
-        <div className={styles.errorContainer}>
-          <div className={styles.errorContent}>
-            <h2 className={styles.errorTitle}>Something went wrong</h2>
-            <p className={styles.errorMessage}>
-              {this.state.error?.message || 'An unexpected error occurred'}
-            </p>
-            {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
-              <details className={styles.errorDetails}>
-                <summary>Error Details</summary>
-                <pre className={styles.errorStack}>
-                  {this.state.error?.stack}
-                </pre>
-                <pre className={styles.errorStack}>
-                  {this.state.errorInfo.componentStack}
-                </pre>
-              </details>
-            )}
-            <button
-              className={styles.resetButton}
-              onClick={this.handleReset}
-            >
-              Try Again
-            </button>
-          </div>
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <h2 className="text-lg font-semibold text-red-800 mb-2">Something went wrong</h2>
+          <p className="text-red-600 mb-4">{this.state.error?.message}</p>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="px-4 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors"
+          >
+            Try again
+          </button>
         </div>
       );
     }

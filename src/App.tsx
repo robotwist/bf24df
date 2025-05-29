@@ -1,98 +1,78 @@
 import React, { useState } from 'react';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import { ToastProvider } from './contexts/ToastContext';
-import FormList from './components/forms/FormList';
-import { WorkflowTemplates } from './components/workflow/WorkflowTemplates';
-import { WorkflowEditor } from './components/workflow/WorkflowEditor';
+import { FormMappingList } from './components/forms/FormMappingList';
 import { SecurityDashboard } from './components/security/SecurityDashboard';
-import { DemoModeToggle } from './components/demo/DemoModeToggle';
-import { DEMO_CONFIG } from './config/demo';
-import styles from './styles/App.module.css';
+import { DemoModeToggle } from './components/common/DemoModeToggle';
+import { AvantosService } from './services/AvantosService';
 
-const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'forms' | 'workflows' | 'security'>('forms');
-  const [graphData, setGraphData] = useState<any>(null);
-  const [currentUser, setCurrentUser] = useState<typeof DEMO_CONFIG.testUsers[0] | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+const AVANTOS_API_URL = process.env.VITE_AVANTOS_API_URL || 'https://api.avantos.com';
+const AVANTOS_API_KEY = process.env.VITE_AVANTOS_API_KEY || '';
 
-  const handleTemplateSelect = (templateId: string) => {
-    setSelectedTemplate(templateId);
-    // Switch to workflows tab if not already there
-    if (activeTab !== 'workflows') {
-      setActiveTab('workflows');
-    }
+const avantosService = new AvantosService(AVANTOS_API_URL, AVANTOS_API_KEY);
+
+type TabType = 'forms' | 'security';
+
+const App = (): JSX.Element => {
+  const [activeTab, setActiveTab] = useState<TabType>('forms');
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
   };
 
-  const handleBackToTemplates = () => {
-    setSelectedTemplate(null);
-  };
-
-  const handleUserSelect = (user: typeof DEMO_CONFIG.testUsers[0]) => {
-    setCurrentUser(user);
-    // Initialize demo data and services with selected user
-    initializeDemoMode(user);
-  };
-
-  const initializeDemoMode = (user: typeof DEMO_CONFIG.testUsers[0]) => {
-    // Initialize services with demo data
-    // This would typically involve setting up mock data and services
-    console.log('Initializing demo mode for user:', user);
-  };
-
-  const renderWorkflowContent = () => {
-    if (selectedTemplate) {
-      return (
-        <WorkflowEditor
-          templateId={selectedTemplate}
-          onBack={handleBackToTemplates}
-          currentUser={currentUser}
-        />
-      );
-    }
-
-    return (
-      <WorkflowTemplates
-        graphData={graphData}
-        onTemplateSelect={handleTemplateSelect}
-        currentUser={currentUser}
-      />
-    );
+  const toggleDemoMode = () => {
+    setIsDemoMode(prev => !prev);
   };
 
   return (
     <ErrorBoundary>
       <ToastProvider>
-        <div className={styles.app}>
-          {DEMO_CONFIG.enabled && (
-            <DemoModeToggle onUserSelect={handleUserSelect} />
-          )}
-          <header className={styles.header}>
-            <h1>Healthcare Workflow Platform</h1>
-            <nav className={styles.navigation}>
-              <button
-                className={`${styles.navButton} ${activeTab === 'forms' ? styles.active : ''}`}
-                onClick={() => setActiveTab('forms')}
-              >
-                Forms
-              </button>
-              <button
-                className={`${styles.navButton} ${activeTab === 'workflows' ? styles.active : ''}`}
-                onClick={() => setActiveTab('workflows')}
-              >
-                Workflows
-              </button>
-              <button
-                className={`${styles.navButton} ${activeTab === 'security' ? styles.active : ''}`}
-                onClick={() => setActiveTab('security')}
-              >
-                Security
-              </button>
-            </nav>
+        <div className="min-h-screen bg-gray-100">
+          <header className="bg-white shadow">
+            <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Form Mapping Platform
+                </h1>
+                <DemoModeToggle isDemoMode={isDemoMode} onToggle={toggleDemoMode} />
+              </div>
+            </div>
           </header>
-          <main className={styles.main}>
-            {activeTab === 'forms' && <FormList />}
-            {activeTab === 'workflows' && renderWorkflowContent()}
-            {activeTab === 'security' && <SecurityDashboard graphData={graphData} />}
+
+          <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mb-6">
+              <nav className="flex space-x-4">
+                <button
+                  onClick={() => handleTabChange('forms')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    activeTab === 'forms'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Forms
+                </button>
+                <button
+                  onClick={() => handleTabChange('security')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    activeTab === 'security'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Security
+                </button>
+              </nav>
+            </div>
+
+            <div className="mt-6">
+              {activeTab === 'forms' ? (
+                <FormMappingList avantosService={avantosService} />
+              ) : (
+                <SecurityDashboard isDemoMode={isDemoMode} />
+              )}
+            </div>
           </main>
         </div>
       </ToastProvider>

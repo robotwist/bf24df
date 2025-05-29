@@ -1,53 +1,48 @@
-type EventHandler = (...args: any[]) => void;
+import { EventHandler, EventType } from '../../types/events';
 
 class EventBus {
-  private static instance: EventBus;
-  private handlers: Map<string, EventHandler[]> = new Map();
+  private handlers: Map<EventType, Set<EventHandler>>;
 
-  private constructor() {}
-
-  public static getInstance(): EventBus {
-    if (!EventBus.instance) {
-      EventBus.instance = new EventBus();
-    }
-    return EventBus.instance;
+  constructor() {
+    this.handlers = new Map();
   }
 
-  public on(event: string, handler: EventHandler): void {
-    if (!this.handlers.has(event)) {
-      this.handlers.set(event, []);
+  subscribe(eventType: EventType, handler: EventHandler): void {
+    if (!this.handlers.has(eventType)) {
+      this.handlers.set(eventType, new Set());
     }
-    this.handlers.get(event)!.push(handler);
+    this.handlers.get(eventType)?.add(handler);
   }
 
-  public off(event: string, handler: EventHandler): void {
-    if (!this.handlers.has(event)) return;
-    
-    const handlers = this.handlers.get(event)!;
-    const index = handlers.indexOf(handler);
-    if (index !== -1) {
-      handlers.splice(index, 1);
-    }
-  }
-
-  public emit(event: string, ...args: any[]): void {
-    if (!this.handlers.has(event)) return;
-    
-    this.handlers.get(event)!.forEach(handler => {
-      try {
-        handler(...args);
-      } catch (error) {
-        console.error(`Error in event handler for ${event}:`, error);
+  unsubscribe(eventType: EventType, handler: EventHandler): void {
+    const handlers = this.handlers.get(eventType);
+    if (handlers) {
+      handlers.delete(handler);
+      if (handlers.size === 0) {
+        this.handlers.delete(eventType);
       }
-    });
+    }
   }
 
-  public clear(): void {
+  publish(eventType: EventType, data: unknown): void {
+    const handlers = this.handlers.get(eventType);
+    if (handlers) {
+      handlers.forEach(handler => {
+        try {
+          handler(data);
+        } catch (error) {
+          console.error(`Error in event handler for ${eventType}:`, error);
+        }
+      });
+    }
+  }
+
+  clear(): void {
     this.handlers.clear();
   }
 }
 
-export const eventBus = EventBus.getInstance();
+export default EventBus;
 
 // Event types
 export enum Events {

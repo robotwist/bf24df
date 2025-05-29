@@ -1,4 +1,5 @@
 import { GraphData, FormNode } from '../types/graph';
+import { EventBus } from '../core/events/EventBus';
 
 interface FHIRResource {
   resourceType: string;
@@ -23,23 +24,67 @@ interface HL7Segment {
 }
 
 interface IntegrationConfig {
-  fhirEndpoint: string;
-  hl7Endpoint: string;
-  apiKey?: string;
-  authToken?: string;
-  retryAttempts: number;
+  apiKey: string;
+  endpoint: string;
   timeout: number;
 }
 
+interface IntegrationResult {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+}
+
 export class IntegrationService {
-  private graphData: GraphData;
+  private eventBus: EventBus;
   private config: IntegrationConfig;
+  private graphData: GraphData;
   private fhirVersion: string = 'R4';
   private hl7Version: string = '2.8';
 
   constructor(graphData: GraphData, config: IntegrationConfig) {
+    this.eventBus = new EventBus();
     this.graphData = graphData;
     this.config = config;
+  }
+
+  async integrate(data: unknown): Promise<IntegrationResult> {
+    try {
+      const response = await fetch(this.config.endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.config.apiKey}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      this.eventBus.publish('integration:success', { data: result });
+      return { success: true, data: result };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      this.eventBus.publish('integration:error', { error: errorMessage });
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  subscribeToEvents(
+    eventType: string,
+    callback: (data: unknown) => void
+  ): void {
+    this.eventBus.subscribe(eventType, callback);
+  }
+
+  unsubscribeFromEvents(
+    eventType: string,
+    callback: (data: unknown) => void
+  ): void {
+    this.eventBus.unsubscribe(eventType, callback);
   }
 
   // FHIR Integration
@@ -301,11 +346,11 @@ export class IntegrationService {
 
   // API Integration
   public async sendToFHIRServer(resource: FHIRResource): Promise<Response> {
-    const response = await fetch(`${this.config.fhirEndpoint}/${resource.resourceType}`, {
+    const response = await fetch(`${this.config.endpoint}/${resource.resourceType}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/fhir+json',
-        'Authorization': `Bearer ${this.config.authToken}`,
+        'Authorization': `Bearer ${this.config.apiKey}`,
         'Accept': 'application/fhir+json'
       },
       body: JSON.stringify(resource)
@@ -319,11 +364,11 @@ export class IntegrationService {
   }
 
   public async sendToHL7Server(message: HL7Message): Promise<Response> {
-    const response = await fetch(this.config.hl7Endpoint, {
+    const response = await fetch(this.config.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/hl7-v2',
-        'Authorization': `Bearer ${this.config.authToken}`,
+        'Authorization': `Bearer ${this.config.apiKey}`,
         'Accept': 'application/json'
       },
       body: this.formatHL7Message(message)

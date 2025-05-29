@@ -1,5 +1,6 @@
 {
   "name": "healthcare-integration-platform",
+  "type": "module",
   "version": "1.0.0",
   "description": "A modern healthcare integration platform with FHIR support",
   "main": "server/index.ts",
@@ -15,7 +16,7 @@
     "test:e2e": "mkdir -p test-results && playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "setup": "pnpm install && ./scripts/start-mongodb.sh",
     "start:dev": "pnpm setup && pnpm dev",
@@ -32,6 +33,7 @@
     "winston": "^3.8.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.27.0",
     "@playwright/test": "^1.52.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -49,6 +51,7 @@
     "@vitejs/plugin-react": "^4.0.0",
     "concurrently": "^8.0.1",
     "eslint": "^8.37.0",
+    "globals": "^16.2.0",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^29.5.0",
     "jest-environment-jsdom": "30.0.0-beta.3",
@@ -58,7 +61,7 @@
     "supertest": "^7.1.1",
     "ts-jest": "^29.1.0",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.0.3",
+    "typescript": "^5.1.6",
     "util": "^0.12.5",
     "vite": "^4.3.0"
   },

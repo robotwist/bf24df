@@ -4,13 +4,16 @@ import { toTitleCase, formatFieldType } from '../../utils/formattingUtils';
 import { MappingEditor } from '../mappings/MappingEditor';
 import { BulkMapping } from '../mappings/BulkMapping';
 import styles from '../../styles/FormCard.module.css';
+import { FormGraph, FormField } from '../../types/forms';
 
 interface FormCardProps {
-  form: FormNode;
+  form: FormGraph;
   graphData: GraphData;
+  onEdit?: (formId: string) => void;
+  onDelete?: (formId: string) => void;
 }
 
-export const FormCard: React.FC<FormCardProps> = ({ form, graphData }) => {
+export const FormCard: React.FC<FormCardProps> = ({ form, graphData, onEdit, onDelete }) => {
   const [isMappingEditorOpen, setIsMappingEditorOpen] = useState(false);
   const [isBulkMappingOpen, setIsBulkMappingOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -48,59 +51,24 @@ export const FormCard: React.FC<FormCardProps> = ({ form, graphData }) => {
     return groups;
   };
 
-  const renderField = (fieldId: string, schema: any) => {
-    const isRequired = form.data.field_schema?.required?.includes(fieldId);
-    const hasDescription = schema.description;
-    const hasValidation = schema.pattern || schema.minLength || schema.maxLength;
+  const renderField = (field: FormField) => (
+    <div key={field.id} className="mb-2">
+      <span className="font-medium">{field.label}</span>
+      <span className="text-gray-500 text-sm ml-2">({field.type})</span>
+    </div>
+  );
 
-    return (
-      <div className={styles.formField} key={fieldId}>
-        <div className={styles.fieldHeader}>
-          <div className={styles.fieldName}>
-            {toTitleCase(fieldId)}
-            {isRequired && <span className={styles.requiredBadge}>Required</span>}
-          </div>
-          <button
-            className={styles.mapFieldButton}
-            onClick={() => setIsMappingEditorOpen(true)}
-          >
-            Map Field
-          </button>
-        </div>
-        <div className={styles.fieldInfo}>
-          <div className={styles.fieldTypeInfo}>
-            <span className={styles.fieldType}>
-              {formatFieldType(schema)}
-            </span>
-            {hasDescription && (
-              <p className={styles.fieldDescription}>{schema.description}</p>
-            )}
-          </div>
-          {hasValidation && (
-            <div className={styles.validationRules}>
-              {schema.pattern && (
-                <div className={styles.validationRule}>
-                  Pattern: {schema.pattern}
-                </div>
-              )}
-              {schema.minLength && (
-                <div className={styles.validationRule}>
-                  Min Length: {schema.minLength}
-                </div>
-              )}
-              {schema.maxLength && (
-                <div className={styles.validationRule}>
-                  Max Length: {schema.maxLength}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(form.id);
+    }
   };
 
-  const fieldGroups = groupFieldsByCategory();
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(form.id);
+    }
+  };
 
   // Get all dependencies (direct and transitive)
   const getDependencies = () => {
@@ -262,13 +230,31 @@ export const FormCard: React.FC<FormCardProps> = ({ form, graphData }) => {
           >
             Bulk Map Fields
           </button>
+          <div className={styles.editDeleteButtons}>
+            {onEdit && (
+              <button
+                onClick={handleEdit}
+                className={styles.editButton}
+              >
+                Edit
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={handleDelete}
+                className={styles.deleteButton}
+              >
+                Delete
+              </button>
+            )}
+          </div>
         </div>
       </div>
       {form.data.description && (
         <p className={styles.formDescription}>{form.data.description}</p>
       )}
       <div className={styles.formFields}>
-        {Object.entries(fieldGroups).map(([category, fields]) => (
+        {Object.entries(groupFieldsByCategory()).map(([category, fields]) => (
           <div key={category} className={styles.fieldSection}>
             <button
               className={styles.sectionHeader}
@@ -282,7 +268,7 @@ export const FormCard: React.FC<FormCardProps> = ({ form, graphData }) => {
             {expandedSections.has(category) && (
               <div className={styles.sectionContent}>
                 {Object.entries(fields).map(([fieldId, schema]) =>
-                  renderField(fieldId, schema)
+                  renderField({ id: fieldId, label: toTitleCase(fieldId), type: formatFieldType(schema) })
                 )}
               </div>
             )}

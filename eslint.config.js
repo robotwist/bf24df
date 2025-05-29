@@ -12,11 +12,12 @@ export default [
       sourceType: 'module',
       globals: {
         ...globals.node,
-        ...globals.jest
+        ...globals.jest,
+        ...globals.browser
       },
       parser: tsparser,
       parserOptions: {
-        project: './tsconfig.json'
+        project: ['./tsconfig.json', './tsconfig.test.json', './tsconfig.app.json', './tsconfig.node.json']
       }
     },
     plugins: {
@@ -27,7 +28,8 @@ export default [
       ...tseslint.configs.recommended.rules,
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/explicit-module-boundary-types': 'off'
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      'no-undef': 'off' // TypeScript handles this
     }
   }
 ]
