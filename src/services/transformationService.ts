@@ -76,19 +76,9 @@ export class TransformationService {
    * Formats a number according to the specified format
    */
   private static formatNumber(num: number, format: string): string {
-    const [decimals, separator, thousands] = format.split('.');
-    const decimalPlaces = decimals.length;
-    const hasThousands = thousands === '#';
-
-    let result = num.toFixed(decimalPlaces);
-    
-    if (hasThousands) {
-      const parts = result.split('.');
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-      result = parts.join('.');
-    }
-
-    return result;
+    // Extract the number of decimal places from the format string
+    const decimalPlaces = format.split('.')[1]?.length || 0;
+    return num.toFixed(decimalPlaces);
   }
 
   /**

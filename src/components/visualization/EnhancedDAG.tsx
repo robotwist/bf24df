@@ -5,7 +5,7 @@ import { HealthcareCompliance } from '../../services/HealthcareCompliance';
 import styles from '../../styles/EnhancedDAG.module.css';
 
 interface EnhancedDAGProps {
-  graphData: GraphData;
+  graphData?: GraphData;
   selectedFormId?: string;
   onFormSelect?: (formId: string) => void;
 }
@@ -29,8 +29,13 @@ const LAYERS: VisualizationLayer[] = [
   { id: 'clinical', name: 'Clinical', color: '#9C27B0', opacity: 0.3 }
 ];
 
+const DEFAULT_GRAPH_DATA: GraphData = {
+  nodes: [],
+  edges: []
+};
+
 export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
-  graphData,
+  graphData = DEFAULT_GRAPH_DATA,
   selectedFormId,
   onFormSelect
 }) => {
@@ -47,10 +52,14 @@ export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
   const healthcareCompliance = new HealthcareCompliance(graphData);
 
   useEffect(() => {
-    calculateLayout();
+    if (graphData?.nodes?.length > 0) {
+      calculateLayout();
+    }
   }, [graphData]);
 
   const calculateLayout = () => {
+    if (!graphData?.nodes?.length) return;
+
     const newPositions: {[key: string]: NodePosition} = {};
     const levels = new Map<string, number>();
     const visited = new Set<string>();
@@ -62,7 +71,7 @@ export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
       levels.set(nodeId, level);
 
       const node = graphData.nodes.find(n => n.id === nodeId);
-      if (node) {
+      if (node?.data?.prerequisites) {
         node.data.prerequisites.forEach(prereqId => {
           assignLevels(prereqId, level + 1);
         });
@@ -71,7 +80,7 @@ export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
 
     // Start with nodes that have no prerequisites
     graphData.nodes
-      .filter(node => node.data.prerequisites.length === 0)
+      .filter(node => !node.data?.prerequisites?.length)
       .forEach(node => assignLevels(node.id, 0));
 
     // Second pass: position nodes
@@ -132,10 +141,12 @@ export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
 
   const getNodeStyle = (nodeId: string) => {
     const position = positions[nodeId];
+    if (!position) return {};
+
     const isSelected = nodeId === selectedFormId;
     const isHovered = nodeId === hoveredNode;
     const node = graphData.nodes.find(n => n.id === nodeId);
-    const healthScore = workflowAnalytics.calculateWorkflowHealth(nodeId).healthMetrics;
+    const healthScore = node ? workflowAnalytics.calculateWorkflowHealth(nodeId).healthMetrics : { completeness: 1 };
 
     return {
       transform: `translate(${position.x + pan.x}px, ${position.y + pan.y}px) scale(${zoom})`,
@@ -147,7 +158,7 @@ export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
   };
 
   const renderMinimap = () => {
-    if (!showMinimap) return null;
+    if (!showMinimap || !graphData?.nodes?.length) return null;
 
     const containerWidth = containerRef.current?.clientWidth || 0;
     const containerHeight = containerRef.current?.clientHeight || 0;
@@ -157,6 +168,8 @@ export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
       <div className={styles.minimap}>
         {graphData.nodes.map(node => {
           const position = positions[node.id];
+          if (!position) return null;
+          
           return (
             <div
               key={node.id}
@@ -172,6 +185,16 @@ export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
       </div>
     );
   };
+
+  if (!graphData?.nodes?.length) {
+    return (
+      <div className={styles.dagContainer}>
+        <div className={styles.emptyState}>
+          No workflow data available
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -214,41 +237,45 @@ export const EnhancedDAG: React.FC<EnhancedDAGProps> = ({
       </div>
 
       <div className={styles.graph}>
-        {graphData.nodes.map(node => (
-          <div
-            key={node.id}
-            className={styles.node}
-            style={getNodeStyle(node.id)}
-            onClick={() => onFormSelect?.(node.id)}
-            onMouseEnter={() => handleNodeHover(node.id)}
-            onMouseLeave={handleNodeLeave}
-          >
-            <div className={styles.nodeContent}>
-              <h4>{node.data.name}</h4>
-              <div className={styles.nodeStats}>
-                <span>{node.data.prerequisites.length} deps</span>
-                <span>{Object.keys(node.data.input_mapping).length} fields</span>
+        {graphData.nodes.map(node => {
+          if (!node?.data) return null;
+          
+          return (
+            <div
+              key={node.id}
+              className={styles.node}
+              style={getNodeStyle(node.id)}
+              onClick={() => onFormSelect?.(node.id)}
+              onMouseEnter={() => handleNodeHover(node.id)}
+              onMouseLeave={handleNodeLeave}
+            >
+              <div className={styles.nodeContent}>
+                <h4>{node.data.name}</h4>
+                <div className={styles.nodeStats}>
+                  <span>{node.data.prerequisites?.length || 0} deps</span>
+                  <span>{Object.keys(node.data.input_mapping || {}).length} fields</span>
+                </div>
               </div>
+              {node.data.prerequisites?.length > 0 && (
+                <div className={styles.dependencies}>
+                  {node.data.prerequisites.map(prereqId => {
+                    const prereq = graphData.nodes.find(n => n.id === prereqId);
+                    return (
+                      <div
+                        key={prereqId}
+                        className={`${styles.dependency} ${
+                          hoveredNode === prereqId ? styles.hovered : ''
+                        }`}
+                      >
+                        ← {prereq?.data?.name || prereqId}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            {node.data.prerequisites.length > 0 && (
-              <div className={styles.dependencies}>
-                {node.data.prerequisites.map(prereqId => {
-                  const prereq = graphData.nodes.find(n => n.id === prereqId);
-                  return (
-                    <div
-                      key={prereqId}
-                      className={`${styles.dependency} ${
-                        hoveredNode === prereqId ? styles.hovered : ''
-                      }`}
-                    >
-                      ← {prereq?.data.name || prereqId}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {renderMinimap()}

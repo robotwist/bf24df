@@ -64,11 +64,14 @@ export const useMappingState = ({ formId, onError }: UseMappingStateProps) => {
 
   useEffect(() => {
     if (!isInitialMount.current) {
-      try {
-        mappingService.saveMappings(formId, state.currentMappings);
-      } catch (error) {
-        onError?.(error instanceof Error ? error : new Error('Failed to save mappings'));
-      }
+      const saveMappings = async () => {
+        try {
+          await mappingService.saveMappings(formId, state.currentMappings);
+        } catch (error) {
+          onError?.(error instanceof Error ? error : new Error('Failed to save mappings'));
+        }
+      };
+      saveMappings();
     }
   }, [formId, state.currentMappings, onError]);
 

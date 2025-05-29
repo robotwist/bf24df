@@ -1,17 +1,23 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^@/(.*)$': '<rootDir>/src/$1'
   },
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', {
+      isolatedModules: true
+    }]
+  },
+  testMatch: [
+    '**/__tests__/**/*.+(ts|tsx|js)',
+    '**/?(*.)+(spec|test).+(ts|tsx|js)',
+  ],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/*.stories.{ts,tsx}',
-    '!src/**/*.test.{ts,tsx}',
-    '!src/**/index.{ts,tsx}',
+    '!src/index.tsx',
+    '!src/serviceWorker.ts',
   ],
   coverageThreshold: {
     global: {
@@ -21,18 +27,20 @@ module.exports = {
       statements: 80,
     },
   },
-  testMatch: [
-    '<rootDir>/tests/**/*.test.{ts,tsx}',
-    '<rootDir>/tests/**/*.spec.{ts,tsx}',
+  moduleDirectories: ['node_modules', 'src'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    '/tests/e2e/',
+    '/avantos-journey-builder/',
+    '/server/tests/'
   ],
-  transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest',
-  },
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+  transformIgnorePatterns: [
+    '/node_modules/(?!(@testing-library|@babel|@emotion)/)'
+  ],
   globals: {
     'ts-jest': {
-      tsconfig: 'tsconfig.json',
-    },
-  },
+      isolatedModules: true
+    }
+  }
 }; 

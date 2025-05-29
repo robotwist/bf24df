@@ -1,6 +1,6 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 
-const options: swaggerJsdoc.Options = {
+export const swaggerSpec = swaggerJsdoc({
   definition: {
     openapi: '3.0.0',
     info: {
@@ -10,7 +10,7 @@ const options: swaggerJsdoc.Options = {
     },
     servers: [
       {
-        url: 'http://localhost:3001',
+        url: 'http://localhost:3000',
         description: 'Development server',
       },
     ],
@@ -23,14 +23,6 @@ const options: swaggerJsdoc.Options = {
         },
       },
     },
-    security: [{
-      bearerAuth: [],
-    }],
   },
-  apis: [
-    './server/routes/*.ts',
-    './server/models/*.ts',
-  ],
-};
-
-export const swaggerSpec = swaggerJsdoc(options); 
+  apis: ['./server/routes/*.ts'], // Path to the API routes
+}); 

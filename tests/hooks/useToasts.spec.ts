@@ -23,9 +23,11 @@ describe('useToasts', () => {
     });
 
     expect(result.current.toasts).toHaveLength(1);
-    expect(result.current.toasts[0]).toMatchObject({
+    expect(result.current.toasts[0]).toEqual({
+      id: expect.any(String),
       message: 'Test message',
-      type: 'success'
+      type: 'success',
+      duration: 3000
     });
   });
 
@@ -34,14 +36,18 @@ describe('useToasts', () => {
 
     act(() => {
       result.current.addToast('Test message', 'success');
-      const toastId = result.current.toasts[0].id;
+    });
+
+    const toastId = result.current.toasts[0].id;
+    
+    act(() => {
       result.current.removeToast(toastId);
     });
 
     expect(result.current.toasts).toHaveLength(0);
   });
 
-  it('should automatically remove toasts after duration', () => {
+  it('should automatically remove toasts after duration', async () => {
     const { result } = renderHook(() => useToasts());
 
     act(() => {
@@ -93,6 +99,22 @@ describe('useToasts', () => {
 
     act(() => {
       jest.advanceTimersByTime(2000);
+    });
+
+    expect(result.current.toasts).toHaveLength(0);
+  });
+
+  it('should manually remove a toast', () => {
+    const { result } = renderHook(() => useToasts());
+
+    act(() => {
+      result.current.addToast('Test message', 'success');
+    });
+
+    const toastId = result.current.toasts[0].id;
+
+    act(() => {
+      result.current.removeToast(toastId);
     });
 
     expect(result.current.toasts).toHaveLength(0);

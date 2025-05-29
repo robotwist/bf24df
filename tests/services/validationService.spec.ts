@@ -1,5 +1,6 @@
 import { ValidationService } from '../../src/services/validationService';
 import { FieldType } from '../../src/types';
+import { FieldMapping, Mapping } from '../../src/types/mappings';
 
 describe('ValidationService', () => {
   describe('validateFieldTypes', () => {
@@ -17,21 +18,13 @@ describe('ValidationService', () => {
   });
 
   describe('validateMapping', () => {
-    it('should validate a valid mapping', () => {
-      const mapping = {
+    it('should accept a valid mapping', () => {
+      const mapping: Mapping = {
         id: 'test-mapping',
         targetFormId: 'form-1',
-        targetField: {
-          id: 'field-1',
-          name: 'Target Field',
-          type: 'string' as FieldType
-        },
+        targetField: { id: 'field-1', name: 'Field 1', type: 'string' },
         sourceFormId: 'form-2',
-        sourceField: {
-          id: 'field-2',
-          name: 'Source Field',
-          type: 'text' as FieldType
-        }
+        sourceField: { id: 'field-2', name: 'Field 2', type: 'string' }
       };
 
       const result = ValidationService.validateMapping(mapping);
@@ -40,25 +33,17 @@ describe('ValidationService', () => {
     });
 
     it('should reject a mapping with incompatible types', () => {
-      const mapping = {
+      const mapping: Mapping = {
         id: 'test-mapping',
         targetFormId: 'form-1',
-        targetField: {
-          id: 'field-1',
-          name: 'Target Field',
-          type: 'number' as FieldType
-        },
+        targetField: { id: 'field-1', name: 'Field 1', type: 'number' },
         sourceFormId: 'form-2',
-        sourceField: {
-          id: 'field-2',
-          name: 'Source Field',
-          type: 'string' as FieldType
-        }
+        sourceField: { id: 'field-2', name: 'Field 2', type: 'string' }
       };
 
       const result = ValidationService.validateMapping(mapping);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Incompatible field types');
+      expect(result.errors).toContain('Incompatible field types: string cannot be mapped to number');
     });
   });
 }); 

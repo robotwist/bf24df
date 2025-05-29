@@ -1,5 +1,6 @@
 import { TransformationService } from '../../src/services/transformationService';
 import { Mapping } from '../../src/types';
+import { FieldMapping } from '../../src/types/mappings';
 
 describe('TransformationService', () => {
   describe('transformValue', () => {
@@ -32,13 +33,20 @@ describe('TransformationService', () => {
     });
 
     it('should format date according to format string', () => {
-      const mapping: Mapping = {
-        id: 'test-mapping',
-        targetFormId: 'form-1',
-        targetField: { id: 'field-1', name: 'Field 1', type: 'date' },
-        sourceFormId: 'form-2',
-        sourceField: { id: 'field-2', name: 'Field 2', type: 'date' },
-        transformation: { type: 'formatDate', format: 'yyyy-MM-dd' }
+      const mapping: FieldMapping = {
+        id: '1',
+        targetFormId: 'form1',
+        targetFieldId: 'field1',
+        source: {
+          type: 'direct',
+          formId: 'form2',
+          fieldId: 'field2',
+          label: 'Field 2'
+        },
+        transformation: {
+          type: 'date',
+          format: 'YYYY-MM-DD'
+        }
       };
 
       const result = TransformationService.transformValue('2024-03-20', mapping);
@@ -46,13 +54,20 @@ describe('TransformationService', () => {
     });
 
     it('should format number according to format string', () => {
-      const mapping: Mapping = {
-        id: 'test-mapping',
-        targetFormId: 'form-1',
-        targetField: { id: 'field-1', name: 'Field 1', type: 'number' },
-        sourceFormId: 'form-2',
-        sourceField: { id: 'field-2', name: 'Field 2', type: 'number' },
-        transformation: { type: 'numberFormat', format: '2' }
+      const mapping: FieldMapping = {
+        id: '1',
+        targetFormId: 'form1',
+        targetFieldId: 'field1',
+        source: {
+          type: 'direct',
+          formId: 'form2',
+          fieldId: 'field2',
+          label: 'Field 2'
+        },
+        transformation: {
+          type: 'numberFormat',
+          format: '0.00'
+        }
       };
 
       const result = TransformationService.transformValue(42.1234, mapping);

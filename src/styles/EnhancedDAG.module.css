@@ -7,6 +7,19 @@
   overflow: hidden;
 }
 
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+  font-size: 16px;
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+}
+
 .controls {
   position: absolute;
   top: 20px;
